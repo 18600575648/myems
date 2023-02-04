@@ -39,7 +39,7 @@ Verwendung von Open Source, um die Ziele der CO2-Peak-Kohlenstoffneutralität zu
 
 ## Funktionen der MyEMS Community Edition
 
-Sehen [MyEMS Funktionen(Community Edition)] (https://myems.io/de/docs/intro#myems-features)
+Sehen [MyEMS Funktionen(Community Edition)](https://myems.io/de/docs/intro#myems-features)
 
 ## Funktionen der MyEMS Enterprise Edition
 

@@ -39,7 +39,7 @@ MyEMS由资深专业团队开发维护，源代码基于MIT开源软件许可协
 
 ## MyEMS社区版功能
 
-详见 [MyEMS社区版功能] (https://myems.io/zh-Hans/docs/intro#myems-features)
+详见 [MyEMS社区版功能](https://myems.io/zh-Hans/docs/intro#myems-features)
 
 ## MyEMS企业版功能
 

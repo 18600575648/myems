@@ -39,7 +39,7 @@ Using open source to help achieve carbon peak carbon neutrality goals.
 
 ## Features of MyEMS Community Edition
 
-See [MyEMS Features(Community Edition)] (https://myems.io/docs/intro#myems-features)
+See [MyEMS Features(Community Edition)](https://myems.io/docs/intro#myems-features)
 
 
 ## Features of MyEMS Enterprise Edition
