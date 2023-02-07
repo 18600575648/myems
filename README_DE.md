@@ -43,7 +43,7 @@ Sehen [MyEMS Funktionen(Community Edition)](https://myems.io/de/docs/intro#myems
 
 ## Funktionen der MyEMS Enterprise Edition
 
-Sehen [Funktionen der MyEMS Enterprise Edition](./enterprise-edition-de.md)
+Sehen [Funktionen der MyEMS Enterprise Edition](https://myems.io/de/docs/enterprise)
 
 
 ## MyEMS Downloads (Community Edition)

@@ -44,7 +44,7 @@ See [MyEMS Features(Community Edition)](https://myems.io/docs/intro#myems-featur
 
 ## Features of MyEMS Enterprise Edition
 
-See [Features of MyEMS Enterprise Edition](./enterprise-edition-en.md)
+See [Features of MyEMS Enterprise Edition](https://myems.io/docs/enterprise)
 
 
 ## MyEMS Downloads (Community Edition)
