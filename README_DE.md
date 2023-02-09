@@ -126,7 +126,7 @@ administrator@myems.io
 
 ### Docker Compose Schnelle Bereitstellung 
 
-Sehen [Docker Compose Schnelle Bereitstellung](docker-compose-de.md)
+Sehen [Docker Compose Schnelle Bereitstellung](https://myems.io/de/docs/installation/docker-compose)
 
 ## MyEMS Projektmanagement
 
