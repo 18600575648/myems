@@ -135,7 +135,7 @@ Sehen [Docker Compose Schnelle Bereitstellung](https://myems.io/de/docs/installa
 
 ## Kooperationsplan für Integrationstests
 
-Sehen [Kooperationsplan für Integrationstests](integration-testing-cn.md)
+Sehen [Kooperationsplan für Integrationstests](https://myems.io/de/docs/cooperation)
 
 ## QQ-Gruppe
 

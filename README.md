@@ -135,7 +135,7 @@ administrator@myems.io
 
 ## 集成测试合作计划
 
-详见 [集成测试合作计划](integration-testing-cn.md)
+详见 [集成测试合作计划](https://myems.io/zh-Hans/docs/cooperation)
 
 ## QQ交流群
 
