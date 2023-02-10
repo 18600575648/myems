@@ -134,7 +134,7 @@ See [Docker Compose Repaid Deployment](https://myems.io/docs/installation/docker
 
 ## Integration Testing Cooperation Plan
 
-See [Integration Testing Cooperation Plan](integration-testing-cn.md)
+See [Integration Testing Cooperation Plan](https://myems.io/docs/cooperation)
 
 
 ## QQ Group
