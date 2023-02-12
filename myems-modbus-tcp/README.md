@@ -4,7 +4,7 @@
 
 This service is a component of MyEMS to acquire data from Modbus TCP devices.
 
-### Prerequisites
+### Dependencies
 
 mysql-connector-python
 
@@ -183,10 +183,11 @@ The option is effective when number_of_registers is ether 2(32bits) or 4(64bits)
 else it will be ignored.
 
 ### References
-  [1]. http://myems.io
-  
-  [2]. http://www.modbus.org/tech.php
-  
-  [3]. https://github.com/ljean/modbus-tk
 
-  [4]. https://docs.python.org/3/library/struct.html#format-strings
+[1]. http://myems.io
+  
+[2]. http://www.modbus.org/tech.php
+  
+[3]. https://github.com/ljean/modbus-tk
+
+[4]. https://docs.python.org/3/library/struct.html#format-strings
