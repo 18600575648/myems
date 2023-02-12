@@ -77,8 +77,8 @@ sudo nano /var/www/myems-admin/app/api.js
 
 ## References
 
-[1].  https://myems.io
+[1]. https://myems.io
 
-[2].  https://dev.mysql.com/doc/connector-python/en/ 
+[2]. https://dev.mysql.com/doc/connector-python/en/ 
 
 [3]. https://nginx.org/

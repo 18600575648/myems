@@ -10,7 +10,7 @@ This service is a component of MyEMS to normalize energy data in historical data
 
 ![MyEMS Meter Normalization](../docs/images/meter-normalization.png)
 
-## Prerequisites
+## Dependencies
 
 mysql-connector-python
 
@@ -139,7 +139,10 @@ cat /myems-normalization.log
 
 ### References
 
-1.  https://myems.io
-2.  https://dev.mysql.com/doc/connector-python/en/
-3.  https://github.com/sympy/sympy
-4.  https://openpyxl.readthedocs.io
+[1]. https://myems.io
+
+[2]. https://dev.mysql.com/doc/connector-python/en/
+
+[3]. https://github.com/sympy/sympy
+
+[4]. https://openpyxl.readthedocs.io

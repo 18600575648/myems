@@ -8,7 +8,7 @@ MyEMS 数据清洗服务
 
 This service is a component of MyEMS to clean the historical data. 
 
-## Prerequisites
+## Dependencies
 
 mysql-connector-python
 
@@ -97,5 +97,6 @@ cat /myems-cleaning.log
 
 ### References
 
-1. https://myems.io
-2. https://dev.mysql.com/doc/connector-python/en/
+[1]. https://myems.io
+
+[2]. https://dev.mysql.com/doc/connector-python/en/

@@ -6,7 +6,7 @@ Web用户界面，用于MyEMS能源数据可视化
 
 Web UI for MyEMS energy data visualization
 
-## Prerequisites
+## Dependencies
 
 nginx-1.18.0 or later
 
@@ -168,3 +168,8 @@ sudo npm run build
 ```bash
 sudo node server.js
 ```
+
+
+### References
+
+[1]. http://myems.io

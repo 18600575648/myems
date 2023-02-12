@@ -8,7 +8,7 @@ Data Aggregation Service
 
 This service is a component of MyEMS to aggregate normalized data up to multiple dimensions.
 
-## Prerequisites
+## Dependencies
 
 mysql-connector-python
 
