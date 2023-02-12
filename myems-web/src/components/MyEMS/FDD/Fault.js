@@ -23,7 +23,6 @@ import {
   Spinner,
 } from 'reactstrap';
 import ButtonIcon from '../../common/ButtonIcon';
-import { Link } from 'react-router-dom';
 import Badge from 'reactstrap/es/Badge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import FalconCardHeader from '../../common/FalconCardHeader';
@@ -46,8 +45,7 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
   const [endDatetime, setEndDatetime] = useState(current_moment);
   const [priority, setPriority] = useState('all');
   const [status, setStatus] = useState('all');
-  
-  const [fetchSuccess, setFetchSuccess] = useState(false);
+
   //Results
   const [faults, setFaults] = useState([]);
   const [excelBytesBase64, setExcelBytesBase64] = useState(undefined);
@@ -68,11 +66,11 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   }, );
   // State
@@ -108,17 +106,6 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
   var getEndDatetime = function (currentDate) {
     return currentDate.isAfter(moment(startDatetime, 'MM/DD/YYYY, hh:mm:ss a'));
   }
-
-  const orderFormatter = (dataField, { id, name, email }) => (
-    <Fragment>
-      <Link to="/e-commerce/order-details">
-        <strong>#{id}</strong>
-      </Link>{' '}
-      by <strong>{name}</strong>
-      <br />
-      <a href={`mailto:${email}`}>{email}</a>
-    </Fragment>
-  );
 
   const subjectFormatter = (dataField, { url }) => (
     <Fragment>
@@ -291,7 +278,6 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
       return response.json();
     }).then(json => {
       if (isResponseOK) {
-        setFetchSuccess(true);
 
         let faultList = []
 
@@ -366,7 +352,6 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
         }).then(json => {
           if (isResponseOK) {
             console.log(json);
-            setFetchSuccess(true);
 
             let faultList = []
 
@@ -443,7 +428,6 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
         }).then(json => {
           if (isResponseOK) {
             console.log(json);
-            setFetchSuccess(true);
 
             let faultList = []
 
@@ -515,7 +499,6 @@ const Fault = ({ setRedirect, setRedirectUrl, t }) => {
         }).then(json => {
           if (isResponseOK) {
             console.log(json);
-            setFetchSuccess(true);
 
             let faultList = []
 

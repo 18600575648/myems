@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { rgbaColor, themeColors } from '../../../helpers/utils';
-import { Row, Col, Card, CardBody, CustomInput } from 'reactstrap';
+import { Card, CardBody } from 'reactstrap';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -61,8 +61,8 @@ const BarChart = ({
       });
       datasets.push({
         label: title,
+        backgroundColor: '#2c7be5',
         data: dataArray,
-        backgroundColor: 'rgb(75, 192, 192)',
         borderColor: 'rgb(75, 192, 192)',
         borderWidth: 1,
       });
@@ -72,15 +72,15 @@ const BarChart = ({
       });
       datasets.push({
         label: compareTitle,
+        backgroundColor: '#27bcfd',
         data: dataArray,
-        backgroundColor: 'rgb(53, 162, 235)',
         borderColor: 'rgb(53, 162, 235)',
         borderWidth: 1,
       });
       setChartData({
         labels: labels,
         datasets: datasets
-      })
+      });
     }
   }, [data, compareData]);
 

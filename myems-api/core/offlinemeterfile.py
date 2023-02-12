@@ -22,7 +22,6 @@ class OfflineMeterFileCollection:
 
     @staticmethod
     def on_get(req, resp):
-        access_control(req)
         cnx = mysql.connector.connect(**config.myems_historical_db)
         cursor = cnx.cursor()
 
@@ -67,15 +66,12 @@ class OfflineMeterFileCollection:
             # Define file_path
             file_path = os.path.join(config.upload_path, file_uuid)
 
-            # Write to a temporary file to prevent incomplete files from
-            # being used.
-            temp_file_path = file_path + '~'
+            # Write to a temporary file to prevent incomplete files from being used.
+            with open(file_path + '~', 'wb') as f:
+                f.write(raw_blob)
 
-            open(temp_file_path, 'wb').write(raw_blob)
-
-            # Now that we know the file has been fully saved to disk
-            # move it into place.
-            os.rename(temp_file_path, file_path)
+            # Now that we know the file has been fully saved to disk move it into place.
+            os.rename(file_path + '~', file_path)
         except Exception as ex:
             raise falcon.HTTPError(falcon.HTTP_400, title='API.ERROR',
                                    description='API.FAILED_TO_UPLOAD_OFFLINE_METER_FILE')
@@ -128,8 +124,7 @@ class OfflineMeterFileCollection:
                 cnx.close()
             raise falcon.HTTPError(falcon.HTTP_400, title='API.BAD_REQUEST',
                                    description='API.INVALID_USER_PLEASE_RE_LOGIN')
-        else:
-            user_id = row[0]
+
         try:
             cnx = mysql.connector.connect(**config.myems_historical_db)
             cursor = cnx.cursor()

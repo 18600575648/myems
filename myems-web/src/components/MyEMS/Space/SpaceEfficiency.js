@@ -20,7 +20,8 @@ import moment from 'moment';
 import loadable from '@loadable/component';
 import Cascader from 'rc-cascader';
 import CardSummary from '../common/CardSummary';
-import LineChart from '../common/LineChart';
+import MultiTrendChart from '../common/MultiTrendChart';
+import MultipleLineChart from '../common/MultipleLineChart';
 import { getCookieValue, createCookie } from '../../../helpers/utils';
 import withRedirect from '../../../hoc/withRedirect';
 import { withTranslation } from 'react-i18next';
@@ -29,7 +30,7 @@ import ButtonIcon from '../../common/ButtonIcon';
 import { APIBaseURL } from '../../../config';
 import { periodTypeOptions } from '../common/PeriodTypeOptions';
 import { comparisonTypeOptions } from '../common/ComparisonTypeOptions';
-import { DateRangePicker } from 'rsuite';
+import DateRangePickerWrapper from '../common/DateRangePickerWrapper';
 import { endOfDay} from 'date-fns';
 import AppContext from '../../../context/Context';
 
@@ -48,13 +49,25 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
   // State
   // Query Parameters
   const [selectedSpaceName, setSelectedSpaceName] = useState(undefined);
@@ -92,9 +105,20 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
   
   //Results
   const [cardSummaryList, setCardSummaryList] = useState([]);
-  const [spaceLineChartLabels, setSpaceLineChartLabels] = useState([]);
-  const [spaceLineChartData, setSpaceLineChartData] = useState({});
-  const [spaceLineChartOptions, setSpaceLineChartOptions] = useState([]);
+
+  const [spaceBaseAndReportingNames, setSpaceBaseAndReportingNames] = useState({"a0":""});
+  const [spaceBaseAndReportingUnits, setSpaceBaseAndReportingUnits] = useState({"a0":"()"});
+
+  const [spaceBaseLabels, setSpaceBaseLabels] = useState({"a0": []});
+  const [spaceBaseData, setSpaceBaseData] = useState({"a0": []});
+  const [spaceBaseSubtotals, setSpaceBaseSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [spaceReportingLabels, setSpaceReportingLabels] = useState({"a0": []});
+  const [spaceReportingData, setSpaceReportingData] = useState({"a0": []});
+  const [spaceReportingSubtotals, setSpaceReportingSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [spaceReportingRates, setSpaceReportingRates] = useState({"a0": []});
+  const [spaceReportingOptions, setSpaceReportingOptions] = useState([]);
   
   const [parameterLineChartLabels, setParameterLineChartLabels] = useState([]);
   const [parameterLineChartData, setParameterLineChartData] = useState({});
@@ -146,7 +170,7 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
     console.log(value, selectedOptions);
     setSelectedSpaceName(selectedOptions.map(o => o.label).join('/'));
     setSelectedSpaceID(value[value.length - 1]);
-  }
+  };
 
   let onComparisonTypeChange = ({ target }) => {
     console.log(target.value);
@@ -208,6 +232,21 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
     setReportingPeriodDateRange([null, null]);
   };
 
+  const isBasePeriodTimestampExists = (base_period_data) => {
+    const timestamps = base_period_data['timestamps'];
+
+    if (timestamps.length === 0) {
+      return false;
+    }
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i].length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Handler
   const handleSubmit = e => {
     e.preventDefault();
@@ -265,39 +304,99 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
           cardSummaryArray.push(cardSummaryItem);
         });
         setCardSummaryList(cardSummaryArray);
-      
-        let timestamps = {}
+
+        let base_timestamps = {}
+        json['base_period_efficiency']['timestamps'].forEach((currentValue, index) => {
+          base_timestamps['a' + index] = currentValue;
+        });
+        setSpaceBaseLabels(base_timestamps)
+
+        let base_values = {}
+        json['base_period_efficiency']['values'].forEach((currentValue, index) => {
+          base_values['a' + index] = currentValue;
+        });
+        setSpaceBaseData(base_values)
+
+        /*
+        * Tip:
+        *     base_names === reporting_names
+        *     base_units === reporting_units
+        * */
+
+        let base_and_reporting_names = {}
+        json['reporting_period_efficiency']['names'].forEach((currentValue, index) => {
+          base_and_reporting_names['a' + index] = currentValue;
+        });
+        setSpaceBaseAndReportingNames(base_and_reporting_names)
+
+        let base_and_reporting_units = {}
+        json['reporting_period_efficiency']['units'].forEach((currentValue, index) => {
+          base_and_reporting_units['a' + index] = "("+currentValue+")";
+        });
+        setSpaceBaseAndReportingUnits(base_and_reporting_units)
+
+        let base_subtotals = {}
+        json['base_period_efficiency']['cumulations'].forEach((currentValue, index) => {
+          if (currentValue != null) {
+            base_subtotals['a' + index] = currentValue.toFixed(2);
+          }else {
+             base_subtotals['a' + index] = null;
+          }
+        });
+        setSpaceBaseSubtotals(base_subtotals)
+
+        let reporting_timestamps = {}
         json['reporting_period_efficiency']['timestamps'].forEach((currentValue, index) => {
-          timestamps['a' + index] = currentValue;
+          reporting_timestamps['a' + index] = currentValue;
         });
-        setSpaceLineChartLabels(timestamps);
-        
-        let values = {}
+        setSpaceReportingLabels(reporting_timestamps);
+
+        let reporting_values = {}
         json['reporting_period_efficiency']['values'].forEach((currentValue, index) => {
-          values['a' + index] = currentValue;
+          reporting_values['a' + index] = currentValue;
         });
-        setSpaceLineChartData(values);
-        
-        let names = Array();
+        setSpaceReportingData(reporting_values);
+
+        let reporting_subtotals = {}
+        json['reporting_period_efficiency']['cumulations'].forEach((currentValue, index) => {
+          if (currentValue != null) {
+            reporting_subtotals['a' + index] = currentValue.toFixed(2);
+          }else {
+             reporting_subtotals['a' + index] = null;
+          }
+        });
+        setSpaceReportingSubtotals(reporting_subtotals);
+
+        let rates = {}
+        json['reporting_period_efficiency']['rates'].forEach((currentValue, index) => {
+          let currentRate = Array();
+          currentValue.forEach((rate) => {
+            currentRate.push(rate ? parseFloat(rate * 100).toFixed(2) : '0.00');
+          });
+          rates['a' + index] = currentRate;
+        });
+        setSpaceReportingRates(rates)
+
+        let options = Array();
         json['reporting_period_efficiency']['names'].forEach((currentValue, index) => {
           let unit = json['reporting_period_efficiency']['units'][index];
-          names.push({ 'value': 'a' + index, 'label': currentValue + ' (' + unit + ')'});
+          options.push({ 'value': 'a' + index, 'label': currentValue + ' (' + unit + ')'});
         });
-        setSpaceLineChartOptions(names);
+        setSpaceReportingOptions(options);
        
-        timestamps = {}
+        let timestamps = {}
         json['parameters']['timestamps'].forEach((currentValue, index) => {
           timestamps['a' + index] = currentValue;
         });
         setParameterLineChartLabels(timestamps);
 
-        values = {}
+        let values = {}
         json['parameters']['values'].forEach((currentValue, index) => {
           values['a' + index] = currentValue;
         });
         setParameterLineChartData(values);
       
-        names = Array();
+        let names = Array();
         json['parameters']['names'].forEach((currentValue, index) => {
           
           names.push({ 'value': 'a' + index, 'label': currentValue });
@@ -322,43 +421,130 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
           });
         };
 
-        let detailed_value = {};
-        detailed_value['id'] = detailed_value_list.length;
-        detailed_value['startdatetime'] = t('Subtotal');
-        json['reporting_period_efficiency']['cumulations'].forEach((currentValue, index) => {
+        if(!isBasePeriodTimestampExists(json['base_period_efficiency'])) {
+          let detailed_value = {};
+          detailed_value['id'] = detailed_value_list.length;
+          detailed_value['startdatetime'] = t('Subtotal');
+          json['reporting_period_efficiency']['cumulations'].forEach((currentValue, index) => {
             if (currentValue != null) {
               detailed_value['a' + index] = currentValue;
-            }else {
+            } else {
               detailed_value['a' + index] = null;
             }
           });
-        detailed_value_list.push(detailed_value);
-        setTimeout( () => {
-          setDetailedDataTableData(detailed_value_list);
-        }, 0)
-        
-        let detailed_column_list = [];
-        detailed_column_list.push({
-          dataField: 'startdatetime',
-          text: t('Datetime'),
-          sort: true
-        })
-        json['reporting_period_efficiency']['names'].forEach((currentValue, index) => {
-          let unit = json['reporting_period_efficiency']['units'][index];
+          detailed_value_list.push(detailed_value);
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+
+          let detailed_column_list = [];
           detailed_column_list.push({
-            dataField: 'a' + index,
-            text: currentValue + ' (' + unit + ')',
-            sort: true,
-            formatter: function (decimalValue) {
-              if (typeof decimalValue === 'number') {
-                return decimalValue.toFixed(2);
-              } else {
-                return null;
-              }
-            }
+            dataField: 'startdatetime',
+            text: t('Datetime'),
+            sort: true
           })
-        });
-        setDetailedDataTableColumns(detailed_column_list);
+          json['reporting_period_efficiency']['names'].forEach((currentValue, index) => {
+            let unit = json['reporting_period_efficiency']['units'][index];
+            detailed_column_list.push({
+              dataField: 'a' + index,
+              text: currentValue + ' (' + unit + ')',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            })
+          });
+          setDetailedDataTableColumns(detailed_column_list);
+        } else {
+          /*
+          * Tip:
+          *     json['base_period_efficiency']['names'] ===  json['reporting_period_efficiency']['names']
+          *     json['base_period_efficiency']['units'] ===  json['reporting_period_efficiency']['units']
+          * */
+          let detailed_column_list = [];
+          detailed_column_list.push({
+            dataField: 'basePeriodDatetime',
+            text: t('Base Period') + ' - ' + t('Datetime'),
+            sort: true
+          })
+
+          json['base_period_efficiency']['names'].forEach((currentValue, index) => {
+            let unit = json['base_period_efficiency']['units'][index];
+            detailed_column_list.push({
+              dataField: 'a' + index,
+              text: t('Base Period') + ' - ' + currentValue + ' (' + unit + ')',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            })
+          });
+
+          detailed_column_list.push({
+            dataField: 'reportingPeriodDatetime',
+            text: t('Reporting Period') + ' - ' + t('Datetime'),
+            sort: true
+          })
+
+          json['reporting_period_efficiency']['names'].forEach((currentValue, index) => {
+            let unit = json['reporting_period_efficiency']['units'][index];
+            detailed_column_list.push({
+              dataField: 'b' + index,
+              text: t('Reporting Period') + ' - ' + currentValue + ' (' + unit + ')',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            })
+          });
+          setDetailedDataTableColumns(detailed_column_list);
+
+          let detailed_value_list = [];
+          if (json['base_period_efficiency']['timestamps'].length > 0 || json['reporting_period_efficiency']['timestamps'].length > 0) {
+            const max_timestamps_length = json['base_period_efficiency']['timestamps'][0].length >= json['reporting_period_efficiency']['timestamps'][0].length?
+                json['base_period_efficiency']['timestamps'][0].length : json['reporting_period_efficiency']['timestamps'][0].length;
+            for (let index = 0; index < max_timestamps_length; index++) {
+              let detailed_value = {};
+              detailed_value['id'] = index;
+              detailed_value['basePeriodDatetime'] = index < json['base_period_efficiency']['timestamps'][0].length? json['base_period_efficiency']['timestamps'][0][index] : null;
+              json['base_period_efficiency']['values'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['a' + energyCategoryIndex] = index < json['base_period_efficiency']['values'][energyCategoryIndex].length? json['base_period_efficiency']['values'][energyCategoryIndex][index] : null;
+              });
+              detailed_value['reportingPeriodDatetime'] = index < json['reporting_period_efficiency']['timestamps'][0].length? json['reporting_period_efficiency']['timestamps'][0][index] : null;
+              json['reporting_period_efficiency']['values'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['b' + energyCategoryIndex] = index < json['reporting_period_efficiency']['values'][energyCategoryIndex].length? json['reporting_period_efficiency']['values'][energyCategoryIndex][index] : null;
+              });
+              detailed_value_list.push(detailed_value);
+            }
+
+            let detailed_value = {};
+            detailed_value['id'] = detailed_value_list.length;
+            detailed_value['basePeriodDatetime'] = t('Subtotal');
+            json['base_period_efficiency']['cumulations'].forEach((currentValue, index) => {
+              detailed_value['a' + index] = currentValue;
+            });
+            detailed_value['reportingPeriodDatetime'] = t('Subtotal');
+            json['reporting_period_efficiency']['cumulations'].forEach((currentValue, index) => {
+              detailed_value['b' + index] = currentValue;
+            });
+            detailed_value_list.push(detailed_value);
+            setTimeout( () => {
+              setDetailedDataTableData(detailed_value_list);
+            }, 0)
+          }
+        }
         
         setExcelBytesBase64(json['excel_bytes_base64']);
 
@@ -458,7 +644,7 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
               <Col xs={6} sm={3}>
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="basePeriodDateRangePicker">{t('Base Period')}{t('(Optional)')}</Label>
-                  <DateRangePicker 
+                  <DateRangePickerWrapper 
                     id='basePeriodDateRangePicker'
                     disabled={basePeriodDateRangePickerDisabled}
                     format="yyyy-MM-dd HH:mm:ss"
@@ -476,7 +662,7 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="reportingPeriodDateRangePicker">{t('Reporting Period')}</Label>
                   <br/>
-                  <DateRangePicker
+                  <DateRangePickerWrapper
                     id='reportingPeriodDateRangePicker'
                     format="yyyy-MM-dd HH:mm:ss"
                     value={reportingPeriodDateRange}
@@ -526,18 +712,25 @@ const SpaceEfficiency = ({ setRedirect, setRedirectUrl, t }) => {
           </CardSummary>
         ))}
       </div>
-      <LineChart reportingTitle={t('Reporting Period Cumulative Efficiency VALUE UNIT', { 'VALUE': null, 'UNIT': null })}
-        baseTitle=''
-        labels={spaceLineChartLabels}
-        data={spaceLineChartData}
-        options={spaceLineChartOptions}>
-      </LineChart>
-      <LineChart reportingTitle={t('Related Parameters')}
+
+      <MultiTrendChart reportingTitle = {{"name": "Reporting Period Cumulative Efficiency NAME VALUE UNIT", "substitute": ["NAME", "VALUE", "UNIT"], "NAME": spaceBaseAndReportingNames, "VALUE": spaceReportingSubtotals, "UNIT": spaceBaseAndReportingUnits}}
+        baseTitle = {{"name": "Base Period Cumulative Efficiency NAME VALUE UNIT", "substitute": ["NAME", "VALUE", "UNIT"], "NAME": spaceBaseAndReportingNames, "VALUE": spaceBaseSubtotals, "UNIT": spaceBaseAndReportingUnits}}
+        reportingTooltipTitle = {{"name": "Reporting Period Cumulative Efficiency NAME VALUE UNIT", "substitute": ["NAME", "VALUE", "UNIT"], "NAME": spaceBaseAndReportingNames, "VALUE": null, "UNIT": spaceBaseAndReportingUnits}}
+        baseTooltipTitle = {{"name": "Base Period Cumulative Efficiency NAME VALUE UNIT", "substitute": ["NAME", "VALUE", "UNIT"], "NAME": spaceBaseAndReportingNames, "VALUE": null, "UNIT": spaceBaseAndReportingUnits}}
+        reportingLabels={spaceReportingLabels}
+        reportingData={spaceReportingData}
+        baseLabels={spaceBaseLabels}
+        baseData={spaceBaseData}
+        rates={spaceReportingRates}
+        options={spaceReportingOptions}>
+      </MultiTrendChart>
+
+      <MultipleLineChart reportingTitle={t('Related Parameters')}
         baseTitle=''
         labels={parameterLineChartLabels}
         data={parameterLineChartData}
         options={parameterLineChartOptions}>
-      </LineChart>
+      </MultipleLineChart>
       <DetailedDataTable data={detailedDataTableData} title={t('Detailed Data')} columns={detailedDataTableColumns} pagesize={50} >
       </DetailedDataTable>
       <br />

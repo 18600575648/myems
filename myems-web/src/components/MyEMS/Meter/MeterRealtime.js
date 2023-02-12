@@ -1,4 +1,4 @@
-import React, { createRef, Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,7 +29,6 @@ const MeterRealtime = ({ setRedirect, setRedirectUrl, t }) => {
   const [maxCursor, setMaxCursor] = useState(0);
   const [selectMeterList, setSelectMeterList] = useState([]);
   const len = 8;
-  const ran = 1;
 
   useEffect(() => {
     let is_logged_in = getCookieValue('is_logged_in');
@@ -42,14 +41,25 @@ const MeterRealtime = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
-  let table = createRef();
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
   // State
   const [selectedSpaceName, setSelectedSpaceName] = useState(undefined);
   const [cascaderOptions, setCascaderOptions] = useState(undefined);

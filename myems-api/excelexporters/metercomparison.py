@@ -44,7 +44,7 @@ def export(result, name1, name2, reporting_start_datetime_local, reporting_end_d
         with open(filename, 'rb') as binary_file:
             binary_file_data = binary_file.read()
     except IOError as ex:
-        pass
+        print(str(ex))
 
     # Base64 encode the bytes
     base64_encoded_data = base64.b64encode(binary_file_data)
@@ -54,13 +54,12 @@ def export(result, name1, name2, reporting_start_datetime_local, reporting_end_d
     try:
         os.remove(filename)
     except NotImplementedError as ex:
-        pass
+        print(str(ex))
     return base64_message
 
 
 def generate_excel(report, name1, name2, reporting_start_datetime_local, reporting_end_datetime_local, period_type,
                    language):
-
     locale_path = './i18n/'
     if language == 'zh_CN':
         trans = gettext.translation('myems', locale_path, languages=['zh_CN'])
@@ -239,9 +238,7 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
     # parameter_len: len(report['parameters1']['names']) + len(report['parameters1']['names'])
     # timestamps_len: reporting_period_data1['timestamps']
     ####################################################################################################################
-    reporting_period_data1 = report['reporting_period1']
-    reporting_period_data2 = report['reporting_period2']
-    times = reporting_period_data1['timestamps']
+    times = report['reporting_period1']['timestamps']
 
     if "values" not in report['reporting_period1'].keys() or \
             len(report['reporting_period1']['values']) == 0 or \
@@ -253,8 +250,6 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
         reporting_period_data1 = report['reporting_period1']
         reporting_period_data2 = report['reporting_period2']
         diff_data = report['diff']
-        category = report['meter1']['energy_category_name']
-        category = report['meter2']['energy_category_name']
         parameters_names_len = len(report['parameters1']['names'])
         parameters_data = report['parameters1']
         parameters_parameters_datas_len = 0
@@ -369,9 +364,9 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
                                   min_row=start_detail_data_row_num, max_row=max_row)
             line.add_data(line_data, titles_from_data=True)
             line.set_categories(labels)
-            line_data = line.series[0]
-            line_data.marker.symbol = "circle"
-            line_data.smooth = True
+            for j in range(0, len(line.series)):
+                line.series[j].marker.symbol = "circle"
+                line.series[j].smooth = True
             line.x_axis.crosses = 'min'
             line.height = 8.25
             line.width = 24
@@ -410,7 +405,6 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
     ####################################################################################################################
     has_parameters_names_and_timestamps_and_values_data = True
     # 12 is the starting line number of the last line chart in the report period
-    time_len = len(reporting_period_data1['timestamps'])
     current_sheet_parameters_row_number = 10 + (1 + 1) * 6
     if 'parameters1' not in report.keys() or \
             report['parameters1'] is None or \
@@ -446,7 +440,7 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
 
         parameters_names_len = len(parameters_data1['names'])
 
-        file_name = (re.sub(r'[^A-Z]', '', ws.title))+'_'
+        file_name = (re.sub(r'[^A-Z]', '', ws.title)) + '_'
         parameters_ws = wb.create_sheet(file_name + 'Parameters1')
 
         parameters_timestamps_data_max_len = \
@@ -504,8 +498,6 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
 
         parameters_ws_current_row_number += 1
 
-        parameters_table_start_row_number = parameters_ws_current_row_number
-
         parameters_ws.row_dimensions[parameters_ws_current_row_number].height = 80
 
         parameters_ws_current_row_number += 1
@@ -549,7 +541,7 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
                     parameters_ws[col + str(table_current_row_number)] = round(parameters_data1['values'][i][j], 2)
                 except Exception as e:
                     print('error 1 in excelexporters\\meterenergy: ' + str(e))
-                
+
                 table_current_row_number += 1
 
             table_current_col_number = table_current_col_number + 3
@@ -558,7 +550,7 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
 
         parameters_names_len = len(parameters_data2['names'])
 
-        file_name = (re.sub(r'[^A-Z]', '', ws.title))+'_'
+        file_name = (re.sub(r'[^A-Z]', '', ws.title)) + '_'
         parameters_ws = wb.create_sheet(file_name + 'Parameters2')
 
         parameters_timestamps_data_max_len = \
@@ -690,8 +682,8 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
             data_col = 3 + col_index * 3
             labels_col = 2 + col_index * 3
             col_index += 1
-            line.title = 'Parameters - ' + \
-                         parameters_ws.cell(row=parameters_table_start_row_number, column=data_col).value
+            line.title = _('Parameters') + ' - ' + \
+                parameters_ws.cell(row=parameters_table_start_row_number, column=data_col).value
             labels = Reference(parameters_ws, min_col=labels_col, min_row=parameters_table_start_row_number + 1,
                                max_row=(len(parameters_data1['timestamps'][i]) + parameters_table_start_row_number))
             line_data = Reference(parameters_ws, min_col=data_col, min_row=parameters_table_start_row_number,
@@ -717,7 +709,7 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
 
         current_sheet_parameters_row_number += 1
 
-        parameters_ws = wb[file_name + 'Parameters1']
+        parameters_ws = wb[file_name + 'Parameters2']
         ws['B' + str(current_sheet_parameters_row_number)].font = title_font
         ws['B' + str(current_sheet_parameters_row_number)] = name2 + ' ' + _('Parameters')
 
@@ -738,8 +730,8 @@ def generate_excel(report, name1, name2, reporting_start_datetime_local, reporti
             data_col = 3 + col_index * 3
             labels_col = 2 + col_index * 3
             col_index += 1
-            line.title = 'Parameters - ' + \
-                         parameters_ws.cell(row=parameters_table_start_row_number, column=data_col).value
+            line.title = _('Parameters') + ' - ' + \
+                parameters_ws.cell(row=parameters_table_start_row_number, column=data_col).value
             labels = Reference(parameters_ws, min_col=labels_col, min_row=parameters_table_start_row_number + 1,
                                max_row=(len(parameters_data1['timestamps'][i]) + parameters_table_start_row_number))
             line_data = Reference(parameters_ws, min_col=data_col, min_row=parameters_table_start_row_number,

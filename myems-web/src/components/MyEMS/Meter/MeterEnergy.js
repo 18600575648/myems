@@ -53,11 +53,11 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
     if (uuid === null || !uuid ){
       setSpaceCascaderHidden(false);
@@ -114,11 +114,11 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
   const [reportingPeriodEnergyConsumptionInTCE, setReportingPeriodEnergyConsumptionInTCE] = useState(0);
   const [reportingPeriodEnergyConsumptionInCO2, setReportingPeriodEnergyConsumptionInCO2] = useState(0);
   const [basePeriodEnergyConsumptionInCategory, setBasePeriodEnergyConsumptionInCategory] = useState(0);
-  const [meterBaseLabels, setMeterBaseLabels] = useState([]);
-  const [meterBaseData, setMeterBaseData] = useState({});
-  const [meterReportingRates, setMeterReportingRates] = useState([]);
-  const [meterReportingLabels, setMeterReportingLabels] = useState([]);
-  const [meterReportingData, setMeterReportingData] = useState({});
+  const [meterBaseLabels, setMeterBaseLabels] = useState({'a0': []});
+  const [meterBaseData, setMeterBaseData] = useState({'a0': []});
+  const [meterReportingRates, setMeterReportingRates] = useState({'a0': []});
+  const [meterReportingLabels, setMeterReportingLabels] = useState({'a0': []});
+  const [meterReportingData, setMeterReportingData] = useState({'a0': []});
   const [meterReportingOptions, setMeterReportingOptions] = useState([]);
   const [parameterLineChartOptions, setParameterLineChartOptions] = useState([]);
   const [parameterLineChartData, setParameterLineChartData] = useState({});
@@ -211,7 +211,6 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
       let isResponseOK = false;
       fetch(APIBaseURL + '/reports/meterenergy?' +
         'meteruuid=' + uuid +
-        '&comparisontype=' + comparisonType +
         '&periodtype=' + periodType +
         '&baseperiodstartdatetime=' + (basePeriodDateRange[0] != null ? moment(basePeriodDateRange[0]).format('YYYY-MM-DDTHH:mm:ss') : '') +
         '&baseperiodenddatetime=' + (basePeriodDateRange[1] != null ? moment(basePeriodDateRange[1]).format('YYYY-MM-DDTHH:mm:ss') : '') +
@@ -262,7 +261,7 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
           json['reporting_period']['rates'].forEach(rate => {
             rates.push(rate ? parseFloat(rate * 100).toFixed(2) : '0.00');
           });
-          setMeterReportingRates(rates);
+          setMeterReportingRates({"a0": rates});
 
           let values = {'a0':[]}
           json['reporting_period']['values'].forEach((currentValue, index) => {
@@ -444,7 +443,7 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
     }).catch(err => {
       console.log(err);
     });
-  }
+  };
 
   const onSearchMeter = ({ target }) => {
     const keyword = target.value.toLowerCase();
@@ -552,7 +551,6 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
     let isResponseOK = false;
     fetch(APIBaseURL + '/reports/meterenergy?' +
       'meterid=' + selectedMeter +
-      '&comparisontype=' + comparisonType +
       '&periodtype=' + periodType +
       '&baseperiodstartdatetime=' + (basePeriodDateRange[0] != null ? moment(basePeriodDateRange[0]).format('YYYY-MM-DDTHH:mm:ss') : '') +
       '&baseperiodenddatetime=' + (basePeriodDateRange[1] != null ? moment(basePeriodDateRange[1]).format('YYYY-MM-DDTHH:mm:ss') : '') +
@@ -601,7 +599,7 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
         json['reporting_period']['rates'].forEach(rate => {
           rates.push(rate ? parseFloat(rate * 100).toFixed(2) : '0.00');
         });
-        setMeterReportingRates(rates);
+        setMeterReportingRates({"a0": rates});
 
         let values = {'a0':[]}
         json['reporting_period']['values'].forEach((currentValue, index) => {
@@ -911,10 +909,10 @@ const MeterEnergy = ({ setRedirect, setRedirectUrl, t}) => {
         </CardSummary>
       </div>
 
-      <MultiTrendChart reportingTitle={t('Reporting Period Consumption CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': reportingPeriodEnergyConsumptionInCategory.toFixed(2), 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
-        baseTitle={t('Base Period Consumption CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': basePeriodEnergyConsumptionInCategory.toFixed(2), 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
-        reportingTooltipTitle={t('Reporting Period Consumption CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': null, 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
-        baseTooltipTitle={t('Base Period Consumption CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': null, 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
+      <MultiTrendChart reportingTitle={{"name": "Reporting Period Consumption CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], 'CATEGORY': {'a0': meterEnergyCategory['name']}, 'VALUE': {'a0': reportingPeriodEnergyConsumptionInCategory.toFixed(2)}, 'UNIT': {'a0': '(' + meterEnergyCategory['unit'] + ')'} }}
+        baseTitle={{"name": "Base Period Consumption CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], 'CATEGORY': {'a0': meterEnergyCategory['name']}, 'VALUE': {'a0': basePeriodEnergyConsumptionInCategory.toFixed(2)}, 'UNIT': {'a0': '(' + meterEnergyCategory['unit'] + ')'}}}
+        reportingTooltipTitle={{"name": "Reporting Period Consumption CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], 'CATEGORY': {'a0': meterEnergyCategory['name']}, 'VALUE': null, 'UNIT': {'a0': '(' + meterEnergyCategory['unit'] + ')'}}}
+        baseTooltipTitle={{"name": "Base Period Consumption CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], 'CATEGORY': {'a0': meterEnergyCategory['name']}, 'VALUE': null, 'UNIT': {'a0': '(' + meterEnergyCategory['unit'] + ')'}}}
         reportingLabels={meterReportingLabels}
         reportingData={meterReportingData}
         baseLabels={meterBaseLabels}

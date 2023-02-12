@@ -20,7 +20,7 @@ import moment from 'moment';
 import loadable from '@loadable/component';
 import Cascader from 'rc-cascader';
 import CardSummary from '../common/CardSummary';
-import LineChart from '../common/LineChart';
+import MultiTrendChart from '../common/MultiTrendChart';
 import MultipleLineChart from '../common/MultipleLineChart';
 import { getCookieValue, createCookie } from '../../../helpers/utils';
 import withRedirect from '../../../hoc/withRedirect';
@@ -30,7 +30,7 @@ import ButtonIcon from '../../common/ButtonIcon';
 import { APIBaseURL } from '../../../config';
 import { periodTypeOptions } from '../common/PeriodTypeOptions';
 import { comparisonTypeOptions } from '../common/ComparisonTypeOptions';
-import { DateRangePicker } from 'rsuite';
+import DateRangePickerWrapper from '../common/DateRangePickerWrapper';
 import { endOfDay} from 'date-fns';
 import AppContext from '../../../context/Context';
 
@@ -50,13 +50,24 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // State
   //Query Form
@@ -89,7 +100,7 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
     formattedMonthPattern: 'yyyy-MM-dd'
   };
   const dateRangePickerStyle = { display: 'block', zIndex: 10};
-  const { language } = useContext(AppContext)
+  const { language } = useContext(AppContext);
 
   // buttons
   const [submitButtonDisabled, setSubmitButtonDisabled] = useState(true);
@@ -102,10 +113,21 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
   const [reportingPeriodEnergySavingRate, setReportingPeriodEnergySavingRate] = useState('');
   const [reportingPeriodEnergySavingInTCE, setReportingPeriodEnergySavingInTCE] = useState(0);
   const [reportingPeriodEnergySavingInCO2, setReportingPeriodEnergySavingInCO2] = useState(0);
-  const [basePeriodEnergySavingInCategory, setBasePeriodEnergySavingInCategory] = useState(0);
-  const [meterLineChartOptions, setMeterLineChartOptions] = useState([]);
-  const [meterLineChartData, setMeterLineChartData] = useState({});
-  const [meterLineChartLabels, setMeterLineChartLabels] = useState([]);
+
+  const [meterBaseAndReportingNames, setMeterBaseAndReportingNames] = useState({"a0":""});
+  const [meterBaseAndReportingUnits, setMeterBaseAndReportingUnits] = useState({"a0":"()"});
+
+  const [meterBaseLabels, setMeterBaseLabels] = useState({"a0": []});
+  const [meterBaseData, setMeterBaseData] = useState({"a0": []});
+  const [meterBaseSubtotals, setMeterBaseSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [meterReportingLabels, setMeterReportingLabels] = useState({"a0": []});
+  const [meterReportingData, setMeterReportingData] = useState({"a0": []});
+  const [meterReportingSubtotals, setMeterReportingSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [meterReportingRates, setMeterReportingRates] = useState({"a0": []});
+  const [meterReportingOptions, setMeterReportingOptions] = useState([]);
+
   const [parameterLineChartOptions, setParameterLineChartOptions] = useState([]);
   const [parameterLineChartData, setParameterLineChartData] = useState({});
   const [parameterLineChartLabels, setParameterLineChartLabels] = useState([]);
@@ -228,7 +250,7 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
     }).catch(err => {
       console.log(err);
     });
-  }
+  };
 
   const onSearchMeter = ({ target }) => {
     const keyword = target.value.toLowerCase();
@@ -308,7 +330,21 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
   let onReportingPeriodClean = event => {
     setReportingPeriodDateRange([null, null]);
   };
-  
+
+  const isBasePeriodTimestampExists = (base_period_data) => {
+    const timestamps = base_period_data['timestamps'];
+
+    if (timestamps.length === 0) {
+      return false;
+    }
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i].length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   // Handler
   const handleSubmit = e => {
@@ -366,75 +402,172 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
         setReportingPeriodEnergySavingInCategory(json['reporting_period']['total_in_category_saving']);
         setReportingPeriodEnergySavingInTCE(json['reporting_period']['total_in_kgce_saving'] / 1000);
         setReportingPeriodEnergySavingInCO2(json['reporting_period']['total_in_kgco2e_saving'] / 1000);
-        setBasePeriodEnergySavingInCategory(json['base_period']['total_in_category_saving']);
+
+        let base_timestamps = {}
+        base_timestamps['a0'] = json['base_period']['timestamps'];
+        setMeterBaseLabels(base_timestamps)
+
+        let base_values = {}
+        base_values['a0'] = json['base_period']['values_saving'];
+        setMeterBaseData(base_values)
+
+        let base_and_reporting_names = {}
+        base_and_reporting_names['a0'] = json['meter']['energy_category_name'];
+        setMeterBaseAndReportingNames(base_and_reporting_names)
+
+        let base_and_reporting_units = {}
+        base_and_reporting_units['a0'] = "(" + json['meter']['unit_of_measure'] + ")";
+        setMeterBaseAndReportingUnits(base_and_reporting_units)
+
+        let base_subtotals = {}
+        base_subtotals['a0'] = json['base_period']['total_in_category_saving'];
+        setMeterBaseSubtotals(base_subtotals)
+
+        let reporting_timestamps = {}
+        reporting_timestamps['a0'] = json['reporting_period']['timestamps']
+        setMeterReportingLabels(reporting_timestamps);
+
+        let reporting_values = {}
+        reporting_values['a0'] = json['reporting_period']['values_saving'];
+        setMeterReportingData(reporting_values);
+
+        let reporting_subtotals = {}
+        reporting_subtotals['a0'] = json['reporting_period']['total_in_category_saving'];
+        setMeterReportingSubtotals(reporting_subtotals);
+
+        let rates = {}
+        rates['a0'] = [];
+        json['reporting_period']['rates_saving'].forEach((currentValue, index) => {
+          rates['a0'].push(currentValue ? parseFloat(currentValue * 100).toFixed(2) : '0.00');
+        });
+        setMeterReportingRates(rates)
+
+        let options = Array();
+        options.push({'value': 'a0', 'label': json['meter']['energy_category_name'] + ' (' + json['meter']['unit_of_measure'] + ')'})
+        setMeterReportingOptions(options);
 
         let names = Array();
-        names.push({ 'value': 'a0', 'label': json['meter']['energy_category_name'] });
-        setMeterLineChartOptions(names);
-
-        let timestamps = {}
-        timestamps['a0'] = json['reporting_period']['timestamps'];
-        setMeterLineChartLabels(timestamps);
-
-        let values = {'a0':[]}
-        json['reporting_period']['values_saving'].forEach((currentValue, index) => {
-          values['a0'][index] = currentValue.toFixed(2);
-        });
-        setMeterLineChartData(values)
-
-        names = Array();
         json['parameters']['names'].forEach((currentValue, index) => {
           
           names.push({ 'value': 'a' + index, 'label': currentValue });
         });
         setParameterLineChartOptions(names);
 
-        timestamps = {}
+        let timestamps = {}
         json['parameters']['timestamps'].forEach((currentValue, index) => {
           timestamps['a' + index] = currentValue;
         });
         setParameterLineChartLabels(timestamps);
 
-        values = {}
+        let values = {}
         json['parameters']['values'].forEach((currentValue, index) => {
           values['a' + index] = currentValue;
         });
         setParameterLineChartData(values);
 
-        setDetailedDataTableColumns([{
-          dataField: 'startdatetime',
-          text: t('Datetime'),
-          sort: true
-        }, {
-          dataField: 'a0',
-          text: json['meter']['energy_category_name'] + ' (' + json['meter']['unit_of_measure'] + ')',
-          sort: true,
-          formatter: function (decimalValue) {
-            if (typeof decimalValue === 'number') {
-              return decimalValue.toFixed(2);
-            } else {
-              return null;
+        if(!isBasePeriodTimestampExists(json['base_period'])) {
+          setDetailedDataTableColumns([{
+            dataField: 'startdatetime',
+            text: t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'a0',
+            text: json['meter']['energy_category_name'] + ' (' + json['meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
             }
-          }
-        }]);
+          }]);
 
-        let detailed_value_list = [];
-        json['reporting_period']['timestamps'].forEach((currentTimestamp, timestampIndex) => {
+          let detailed_value_list = [];
+          json['reporting_period']['timestamps'].forEach((currentTimestamp, timestampIndex) => {
+            let detailed_value = {};
+            detailed_value['id'] = timestampIndex;
+            detailed_value['startdatetime'] = currentTimestamp;
+            detailed_value['a0'] = json['reporting_period']['values_saving'][timestampIndex];
+            detailed_value_list.push(detailed_value);
+          });
+
           let detailed_value = {};
-          detailed_value['id'] = timestampIndex;
-          detailed_value['startdatetime'] = currentTimestamp;
-          detailed_value['a0'] = json['reporting_period']['values_saving'][timestampIndex];
+          detailed_value['id'] = detailed_value_list.length;
+          detailed_value['startdatetime'] = t('Total');
+          detailed_value['a0'] = json['reporting_period']['total_in_category_saving'];
           detailed_value_list.push(detailed_value);
-        });
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+        }else {
+          setDetailedDataTableColumns([{
+            dataField: 'basePeriodDatetime',
+            text: t('Base Period') + ' - ' + t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'a0',
+            text: t('Base Period') + ' - ' + json['meter']['energy_category_name'] + ' (' + json['meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
+            }
+          }, {
+            dataField: 'reportingPeriodDatetime',
+            text: t('Reporting Period') + ' - ' + t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'b0',
+            text: t('Reporting Period') + ' - ' + json['meter']['energy_category_name'] + ' (' + json['meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
+            }
+          }]);
 
-        let detailed_value = {};
-        detailed_value['id'] = detailed_value_list.length;
-        detailed_value['startdatetime'] = t('Total');
-        detailed_value['a0'] = json['reporting_period']['total_in_category_saving'];
-        detailed_value_list.push(detailed_value);
-        setTimeout( () => {
-          setDetailedDataTableData(detailed_value_list);
-        }, 0)
+          let detailed_value_list = [];
+          const max_timestamps_length = json['base_period']['timestamps'].length >= json['reporting_period']['timestamps'].length?
+                json['base_period']['timestamps'].length : json['reporting_period']['timestamps'].length;
+
+          for (let index = 0; index < max_timestamps_length; index++) {
+            let detailed_value = {};
+            detailed_value['id'] = index;
+            detailed_value['basePeriodDatetime'] = null;
+            detailed_value['a0'] = null;
+            detailed_value['reportingPeriodDatetime'] = null;
+            detailed_value['a0'] = null;
+            if (index < json['base_period']['timestamps'].length) {
+              detailed_value['basePeriodDatetime'] = json['base_period']['timestamps'][index];
+              detailed_value['a0'] = json['base_period']['values_saving'][index];
+            }
+
+            if (index < json['reporting_period']['timestamps'].length) {
+              detailed_value['reportingPeriodDatetime'] = json['reporting_period']['timestamps'][index];
+              detailed_value['b0'] = json['reporting_period']['values_saving'][index];
+            }
+            detailed_value_list.push(detailed_value);
+          }
+
+          let detailed_value = {};
+          detailed_value['id'] = detailed_value_list.length;
+          detailed_value['basePeriodDatetime'] = t('Total');
+          detailed_value['a0'] = json['base_period']['total_in_category_saving'];
+          detailed_value['reportingPeriodDatetime'] = t('Total');
+          detailed_value['b0'] = json['reporting_period']['total_in_category_saving'];
+          detailed_value_list.push(detailed_value);
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+
+        }
 
         setExcelBytesBase64(json['excel_bytes_base64']);
 
@@ -553,7 +686,7 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
               <Col xs={6} sm={3}>
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="basePeriodDateRangePicker">{t('Base Period')}{t('(Optional)')}</Label>
-                  <DateRangePicker 
+                  <DateRangePickerWrapper 
                     id='basePeriodDateRangePicker'
                     disabled={basePeriodDateRangePickerDisabled}
                     format="yyyy-MM-dd HH:mm:ss"
@@ -571,7 +704,7 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="reportingPeriodDateRangePicker">{t('Reporting Period')}</Label>
                   <br/>
-                  <DateRangePicker
+                  <DateRangePickerWrapper
                     id='reportingPeriodDateRangePicker'
                     format="yyyy-MM-dd HH:mm:ss"
                     value={reportingPeriodDateRange}
@@ -625,12 +758,17 @@ const MeterSaving = ({ setRedirect, setRedirectUrl, t }) => {
         </CardSummary>
       </div>
 
-      <LineChart reportingTitle={t('Reporting Period Saving CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': reportingPeriodEnergySavingInCategory.toFixed(2), 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
-        baseTitle={t('Base Period Saving CATEGORY VALUE UNIT', { 'CATEGORY': meterEnergyCategory['name'], 'VALUE': basePeriodEnergySavingInCategory.toFixed(2), 'UNIT': '(' + meterEnergyCategory['unit'] + ')' })}
-        labels={meterLineChartLabels}
-        data={meterLineChartData}
-        options={meterLineChartOptions}>
-      </LineChart>
+      <MultiTrendChart reportingTitle = {{"name": "Reporting Period Saving CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": meterBaseAndReportingNames, "VALUE": meterReportingSubtotals, "UNIT": meterBaseAndReportingUnits}}
+        baseTitle = {{"name": "Base Period Saving CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": meterBaseAndReportingNames, "VALUE": meterBaseSubtotals, "UNIT": meterBaseAndReportingUnits}}
+        reportingTooltipTitle = {{"name": "Reporting Period Saving CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": meterBaseAndReportingNames, "VALUE": null, "UNIT": meterBaseAndReportingUnits}}
+        baseTooltipTitle = {{"name": "Base Period Saving CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": meterBaseAndReportingNames, "VALUE": null, "UNIT": meterBaseAndReportingUnits}}
+        reportingLabels={meterReportingLabels}
+        reportingData={meterReportingData}
+        baseLabels={meterBaseLabels}
+        baseData={meterBaseData}
+        rates={meterReportingRates}
+        options={meterReportingOptions}>
+      </MultiTrendChart>
 
       <MultipleLineChart reportingTitle={t('Related Parameters')}
         baseTitle=''

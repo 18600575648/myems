@@ -6,7 +6,7 @@ Web用户界面，用于MyEMS能源数据可视化
 
 Web UI for MyEMS energy data visualization
 
-## Prerequisites
+## Dependencies
 
 nginx-1.18.0 or later
 
@@ -58,162 +58,11 @@ npm start
 
 ### Option 1: Install myems-web on Docker
 
-In this section, you will install myems-web on Docker.
-
-* Check and change the config file if necessary:
-
-```bash
-cd myems/myems-web
-nano src/config.js
-```
-
-* Replace ~~127.0.0.1:8000~~ in nginx.conf with real **HOST** ip and port of myems-api
-```bash
-cd myems/myems-web
-nano nginx.conf
-```
-
-
-* Copy source code to root directory
-
-On Windows:
-```bash
-cp -r myems/myems-web c:\
-cd c:\myems-web
-```
-
-On Linux:
-```bash
-cp -r myems/myems-web /
-cd /myems-web
-```
-
-**NOTE**: You can safely ignore the command 'npm run build' in this section, because it is built into the Dockerfile
-
-* Build a Docker image
-
-```bash
-docker build -t myems/myems-web .
-```
-
-To build for multiple platforms and not only for the architecture and operating system that the user invoking the build happens to run.
-You can use buildx and set the --platform flag to specify the target platform for the build output, (for example, linux/amd64, linux/arm64, or darwin/amd64).
-```bash
-docker buildx build --platform=linux/amd64 -t myems/myems-web .
-```
-
-* Run a Docker container
-
-If run on Windows host, bind-mount nginx.conf to the container
-```bash
-docker run -d -p 80:80 -v c:\myems-web/nginx.conf:/etc/nginx/nginx.conf:ro --log-opt max-size=1m --log-opt max-file=2 --restart always --name myems-web myems/myems-web
-```
-If run on Linux host, bind-mount nginx.conf 
-```bash
-docker run -d -p 80:80 -v /myems-web/nginx.conf:/etc/nginx/nginx.conf:ro --log-opt max-size=1m --log-opt max-file=2 --restart always --name myems-web myems/myems-web
-```
-
-* -d Run container in background and print container ID
-
-* -p Publish a container's port(s) to the host, 80:80 (Host:Container) binds port 80 (right)  of the container to 
-TCP port 80 (left) of the host machine.
-
-* -v If you use -v or --volume to bind-mount a file or directory that does not yet exist on the Docker host, 
--v creates the endpoint for you. It is always created as a directory.
-The ro option, if present, causes the bind mount to be mounted into the container as read-only.
-
-* --log-opt max-size=2m The maximum size of the log before it is rolled. A positive integer plus a modifier representing the unit of measure (k, m, or g).
-
-* --log-opt max-file=2 The maximum number of log files that can be present. If rolling the logs creates excess files, the oldest file is removed. A positive integer. 
-
-* --restart Restart policy to apply when a container exits
-
-* --name Assign a name to the container
-
-If you want to immigrate the image to another computer,
-* Export image to tarball file
-```bash
-docker save --output myems-web.tar myems/myems-web
-```
-
-* Copy the tarball file to another computer, and then load image from tarball file
-```bash
-docker load --input .\myems-web.tar
-```
+Refer to [myems.io](https://myems.io/docs/installation/docker-linux#step-8-myems-web)
 
 ### Option 2: Install myems-web on Server with NGINX
 
-*   Install NGINX  Server
-refer to http://nginx.org/en/docs/install.html
-
-*   Configure NGINX
-```bash
-sudo nano /etc/nginx/nginx.conf
-```
-In the 'http' section, add some directives:
-```
-http{
-    client_header_timeout 600;
-    client_max_body_size 512M;
-    gzip on;
-    gzip_min_length 512;
-    gzip_proxied any;
-    gzip_types *;
-    gzip_vary on;
-    proxy_buffering off;
-    ...
-
-}
-```
-
-Add a new 'server' section with directives as below:
-```
-  server {
-      listen                 80;
-      server_name     myems-web;
-      location / {
-          root    /var/www/myems-web;
-          index index.html index.htm;
-          # add try_files directive to avoid 404 error while refreshing pages
-          try_files $uri  /index.html;
-      }
-      ## To avoid CORS issue, use Nginx to proxy myems-api to path /api 
-      ## Add another location /api in 'server' and replace demo address http://127.0.0.1:8000/ with actual url
-      location /api {
-          proxy_pass http://127.0.0.1:8000/;
-          proxy_connect_timeout 75;
-          proxy_read_timeout 600;
-          send_timeout 600;
-      }
-  }
-```
-Restart NGINX
-```bash
-sudo systemctl restart nginx
-```
-
-* Install MyEMS Web UI:
-
-Check and change the config file if necessary:
-```bash
-cd myems/myems-web
-sudo nano src/config.js
-```
-
-Build and Compress
-```bash
-sudo npm run build
-tar czvf myems-web.tar.gz build
-```
-
-Install
-Upload the file myems-web.tar.gz to you web server. 
-Note that the following path should be same as that was configured in nginx.conf.
-```bash
-tar xzf myems-web.tar.gz
-sudo rm -r /var/www/myems-web
-sudo mv build  /var/www/myems-web
-```
+Refer to [myems.io](https://myems.io/docs/installation/debian-ubuntu#step-8-myems-web)
 
 ### Option 3: Install on Apache2 Server
 * Install Apache2 Server
@@ -319,3 +168,8 @@ sudo npm run build
 ```bash
 sudo node server.js
 ```
+
+
+### References
+
+[1]. http://myems.io

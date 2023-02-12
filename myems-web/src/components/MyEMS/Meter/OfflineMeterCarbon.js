@@ -20,7 +20,7 @@ import moment from 'moment';
 import loadable from '@loadable/component';
 import Cascader from 'rc-cascader';
 import CardSummary from '../common/CardSummary';
-import LineChart from '../common/LineChart';
+import MultiTrendChart from '../common/MultiTrendChart';
 import { getCookieValue, createCookie } from '../../../helpers/utils';
 import withRedirect from '../../../hoc/withRedirect';
 import { withTranslation } from 'react-i18next';
@@ -29,9 +29,10 @@ import ButtonIcon from '../../common/ButtonIcon';
 import { APIBaseURL } from '../../../config';
 import { periodTypeOptions } from '../common/PeriodTypeOptions';
 import { comparisonTypeOptions } from '../common/ComparisonTypeOptions';
-import { DateRangePicker } from 'rsuite';
+import DateRangePickerWrapper from '../common/DateRangePickerWrapper';
 import { endOfDay} from 'date-fns';
 import AppContext from '../../../context/Context';
+import MultipleLineChart from '../common/MultipleLineChart';
 
 
 const DetailedDataTable = loadable(() => import('../common/DetailedDataTable'));
@@ -49,13 +50,24 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // State
   //Query Form
@@ -100,10 +112,21 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
   const [reportingPeriodEnergyCarbonRate, setReportingPeriodEnergyCarbonRate] = useState('');
   const [reportingPeriodEnergyConsumptionInTCE, setReportingPeriodEnergyConsumptionInTCE] = useState(0);
   const [reportingPeriodEnergyConsumptionInCO2, setReportingPeriodEnergyConsumptionInCO2] = useState(0);
-  const [basePeriodEnergyCarbonInCategory, setBasePeriodEnergyCarbonInCategory] = useState(0);
-  const [offlineMeterLineChartOptions, setOfflineMeterLineChartOptions] = useState([]);
-  const [offlineMeterLineChartData, setOfflineMeterLineChartData] = useState({});
-  const [offlineMeterLineChartLabels, setOfflineMeterLineChartLabels] = useState([]);
+
+  const [offlineMeterBaseAndReportingNames, setOfflineMeterBaseAndReportingNames] = useState({"a0":""});
+  const [offlineMeterBaseAndReportingUnits, setOfflineMeterBaseAndReportingUnits] = useState({"a0":"()"});
+
+  const [offlineMeterBaseLabels, setOfflineMeterBaseLabels] = useState({"a0": []});
+  const [offlineMeterBaseData, setOfflineMeterBaseData] = useState({"a0": []});
+  const [offlineMeterBaseSubtotals, setOfflineMeterBaseSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [offlineMeterReportingLabels, setOfflineMeterReportingLabels] = useState({"a0": []});
+  const [offlineMeterReportingData, setOfflineMeterReportingData] = useState({"a0": []});
+  const [offlineMeterReportingSubtotals, setOfflineMeterReportingSubtotals] = useState({"a0": (0).toFixed(2)});
+
+  const [offlineMeterReportingRates, setOfflineMeterReportingRates] = useState({"a0": []});
+  const [offlineMeterReportingOptions, setOfflineMeterReportingOptions] = useState([]);
+
   const [parameterLineChartOptions, setParameterLineChartOptions] = useState([]);
   const [parameterLineChartData, setParameterLineChartData] = useState({});
   const [parameterLineChartLabels, setParameterLineChartLabels] = useState([]);
@@ -222,7 +245,7 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
     }).catch(err => {
       console.log(err);
     });
-  }
+  };
 
   let onComparisonTypeChange = ({ target }) => {
     console.log(target.value);
@@ -278,6 +301,21 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
 
   let onReportingPeriodClean = event => {
     setReportingPeriodDateRange([null, null]);
+  };
+
+  const isBasePeriodTimestampExists = (base_period_data) => {
+    const timestamps = base_period_data['timestamps'];
+
+    if (timestamps.length === 0) {
+      return false;
+    }
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i].length > 0) {
+        return true;
+      }
+    }
+    return false;
   };
 
   // Handler
@@ -336,75 +374,172 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
         setReportingPeriodEnergyCarbonInCategory(json['reporting_period']['total_in_category']);
         setReportingPeriodEnergyConsumptionInTCE(json['reporting_period']['total_in_kgce'] / 1000);
         setReportingPeriodEnergyConsumptionInCO2(json['reporting_period']['total_in_kgco2e'] / 1000);
-        setBasePeriodEnergyCarbonInCategory(json['base_period']['total_in_category']);
+
+        let base_timestamps = {}
+        base_timestamps['a0'] = json['base_period']['timestamps'];
+        setOfflineMeterBaseLabels(base_timestamps)
+
+        let base_values = {}
+        base_values['a0'] = json['base_period']['values'];
+        setOfflineMeterBaseData(base_values)
+
+        let base_and_reporting_names = {}
+        base_and_reporting_names['a0'] = json['offline_meter']['energy_category_name'];
+        setOfflineMeterBaseAndReportingNames(base_and_reporting_names)
+
+        let base_and_reporting_units = {}
+        base_and_reporting_units['a0'] = "(" + json['offline_meter']['unit_of_measure'] + ")";
+        setOfflineMeterBaseAndReportingUnits(base_and_reporting_units)
+
+        let base_subtotals = {}
+        base_subtotals['a0'] = json['base_period']['total_in_category'];
+        setOfflineMeterBaseSubtotals(base_subtotals)
+
+        let reporting_timestamps = {}
+        reporting_timestamps['a0'] = json['reporting_period']['timestamps']
+        setOfflineMeterReportingLabels(reporting_timestamps);
+
+        let reporting_values = {}
+        reporting_values['a0'] = json['reporting_period']['values'];
+        setOfflineMeterReportingData(reporting_values);
+
+        let reporting_subtotals = {}
+        reporting_subtotals['a0'] = json['reporting_period']['total_in_category'];
+        setOfflineMeterReportingSubtotals(reporting_subtotals);
+
+        let rates = {}
+        rates['a0'] = [];
+        json['reporting_period']['rates'].forEach((currentValue, index) => {
+          rates['a0'].push(currentValue ? parseFloat(currentValue * 100).toFixed(2) : '0.00');
+        });
+        setOfflineMeterReportingRates(rates)
+
+        let options = Array();
+        options.push({'value': 'a0', 'label': json['offline_meter']['energy_category_name'] + ' (' + json['offline_meter']['unit_of_measure'] + ')'})
+        setOfflineMeterReportingOptions(options);
 
         let names = Array();
-        names.push({ 'value': 'a0', 'label': json['offline_meter']['energy_category_name'] });
-        setOfflineMeterLineChartOptions(names);
-        
-        let timestamps = {}
-        timestamps['a0'] = json['reporting_period']['timestamps'];
-        setOfflineMeterLineChartLabels(timestamps);
-
-        let values = {'a0':[]}
-        json['reporting_period']['values'].forEach((currentValue, index) => {
-          values['a0'][index] = currentValue.toFixed(2);
-        });
-        setOfflineMeterLineChartData(values)
-
-        names = Array();
         json['parameters']['names'].forEach((currentValue, index) => {
           
           names.push({ 'value': 'a' + index, 'label': currentValue });
         });
         setParameterLineChartOptions(names);
 
-        timestamps = {}
+        let timestamps = {}
         json['parameters']['timestamps'].forEach((currentValue, index) => {
           timestamps['a' + index] = currentValue;
         });
         setParameterLineChartLabels(timestamps);
 
-        values = {}
+        let values = {}
         json['parameters']['values'].forEach((currentValue, index) => {
           values['a' + index] = currentValue;
         });
         setParameterLineChartData(values);
 
-        setDetailedDataTableColumns([{
-          dataField: 'startdatetime',
-          text: t('Datetime'),
-          sort: true
-        }, {
-          dataField: 'a0',
-          text: json['offline_meter']['energy_category_name'] + ' (' + json['offline_meter']['unit_of_measure'] + ')',
-          sort: true,
-          formatter: function (decimalValue) {
-            if (typeof decimalValue === 'number') {
-              return decimalValue.toFixed(2);
-            } else {
-              return null;
+        if(!isBasePeriodTimestampExists(json['base_period'])) {
+          setDetailedDataTableColumns([{
+            dataField: 'startdatetime',
+            text: t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'a0',
+            text: json['offline_meter']['energy_category_name'] + ' (' + json['offline_meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
             }
-          }
-        }]);
+          }]);
 
-        let detailed_value_list = [];
-        json['reporting_period']['timestamps'].forEach((currentTimestamp, timestampIndex) => {
+          let detailed_value_list = [];
+          json['reporting_period']['timestamps'].forEach((currentTimestamp, timestampIndex) => {
+            let detailed_value = {};
+            detailed_value['id'] = timestampIndex;
+            detailed_value['startdatetime'] = currentTimestamp;
+            detailed_value['a0'] = json['reporting_period']['values'][timestampIndex];
+            detailed_value_list.push(detailed_value);
+          });
+
           let detailed_value = {};
-          detailed_value['id'] = timestampIndex;
-          detailed_value['startdatetime'] = currentTimestamp;
-          detailed_value['a0'] = json['reporting_period']['values'][timestampIndex];
+          detailed_value['id'] = detailed_value_list.length;
+          detailed_value['startdatetime'] = t('Total');
+          detailed_value['a0'] = json['reporting_period']['total_in_category'];
           detailed_value_list.push(detailed_value);
-        });
-        
-        let detailed_value = {};
-        detailed_value['id'] = detailed_value_list.length;
-        detailed_value['startdatetime'] = t('Total');
-        detailed_value['a0'] = json['reporting_period']['total_in_category'];
-        detailed_value_list.push(detailed_value);
-        setTimeout( () => {
-          setDetailedDataTableData(detailed_value_list);
-        }, 0)
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+        }else {
+          setDetailedDataTableColumns([{
+            dataField: 'basePeriodDatetime',
+            text: t('Base Period') + ' - ' + t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'a0',
+            text: t('Base Period') + ' - ' + json['offline_meter']['energy_category_name'] + ' (' + json['offline_meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
+            }
+          }, {
+            dataField: 'reportingPeriodDatetime',
+            text: t('Reporting Period') + ' - ' + t('Datetime'),
+            sort: true
+          }, {
+            dataField: 'b0',
+            text: t('Reporting Period') + ' - ' + json['offline_meter']['energy_category_name'] + ' (' + json['offline_meter']['unit_of_measure'] + ')',
+            sort: true,
+            formatter: function (decimalValue) {
+              if (typeof decimalValue === 'number') {
+                return decimalValue.toFixed(2);
+              } else {
+                return null;
+              }
+            }
+          }]);
+
+          let detailed_value_list = [];
+          const max_timestamps_length = json['base_period']['timestamps'].length >= json['reporting_period']['timestamps'].length?
+                json['base_period']['timestamps'].length : json['reporting_period']['timestamps'].length;
+
+          for (let index = 0; index < max_timestamps_length; index++) {
+            let detailed_value = {};
+            detailed_value['id'] = index;
+            detailed_value['basePeriodDatetime'] = null;
+            detailed_value['a0'] = null;
+            detailed_value['reportingPeriodDatetime'] = null;
+            detailed_value['a0'] = null;
+            if (index < json['base_period']['timestamps'].length) {
+              detailed_value['basePeriodDatetime'] = json['base_period']['timestamps'][index];
+              detailed_value['a0'] = json['base_period']['values'][index];
+            }
+
+            if (index < json['reporting_period']['timestamps'].length) {
+              detailed_value['reportingPeriodDatetime'] = json['reporting_period']['timestamps'][index];
+              detailed_value['b0'] = json['reporting_period']['values'][index];
+            }
+            detailed_value_list.push(detailed_value);
+          }
+
+          let detailed_value = {};
+          detailed_value['id'] = detailed_value_list.length;
+          detailed_value['basePeriodDatetime'] = t('Total');
+          detailed_value['a0'] = json['base_period']['total_in_category'];
+          detailed_value['reportingPeriodDatetime'] = t('Total');
+          detailed_value['b0'] = json['reporting_period']['total_in_category'];
+          detailed_value_list.push(detailed_value);
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+
+        }
         
         setExcelBytesBase64(json['excel_bytes_base64']);
 
@@ -516,7 +651,7 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
               <Col xs={6} sm={3}>
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="basePeriodDateRangePicker">{t('Base Period')}{t('(Optional)')}</Label>
-                  <DateRangePicker 
+                  <DateRangePickerWrapper 
                     id='basePeriodDateRangePicker'
                     disabled={basePeriodDateRangePickerDisabled}
                     format="yyyy-MM-dd HH:mm:ss"
@@ -534,7 +669,7 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="reportingPeriodDateRangePicker">{t('Reporting Period')}</Label>
                   <br/>
-                  <DateRangePicker
+                  <DateRangePickerWrapper
                     id='reportingPeriodDateRangePicker'
                     format="yyyy-MM-dd HH:mm:ss"
                     value={reportingPeriodDateRange}
@@ -588,19 +723,24 @@ const OfflineMeterCarbon = ({ setRedirect, setRedirectUrl, t }) => {
         </CardSummary>
       </div>
 
-      <LineChart reportingTitle={t('Reporting Period Carbon Dioxide Emissions CATEGORY VALUE UNIT', { 'CATEGORY': offlineMeterEnergyCategory['name'], 'VALUE': reportingPeriodEnergyCarbonInCategory.toFixed(2), 'UNIT': '(' + offlineMeterEnergyCategory['unit'] + ')' })}
-        baseTitle={t('Base Period Carbon Dioxide Emissions CATEGORY VALUE UNIT', { 'CATEGORY': offlineMeterEnergyCategory['name'], 'VALUE': basePeriodEnergyCarbonInCategory.toFixed(2), 'UNIT': '(' + offlineMeterEnergyCategory['unit'] + ')' })}
-        labels={offlineMeterLineChartLabels}
-        data={offlineMeterLineChartData}
-        options={offlineMeterLineChartOptions}>
-      </LineChart>
+      <MultiTrendChart reportingTitle = {{"name": "Reporting Period Carbon Dioxide Emissions CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": offlineMeterBaseAndReportingNames, "VALUE": offlineMeterReportingSubtotals, "UNIT": offlineMeterBaseAndReportingUnits}}
+        baseTitle = {{"name": "Base Period Carbon Dioxide Emissions CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": offlineMeterBaseAndReportingNames, "VALUE": offlineMeterBaseSubtotals, "UNIT": offlineMeterBaseAndReportingUnits}}
+        reportingTooltipTitle = {{"name": "Reporting Period Carbon Dioxide Emissions CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": offlineMeterBaseAndReportingNames, "VALUE": null, "UNIT": offlineMeterBaseAndReportingUnits}}
+        baseTooltipTitle = {{"name": "Base Period Carbon Dioxide Emissions CATEGORY VALUE UNIT", "substitute": ["CATEGORY", "VALUE", "UNIT"], "CATEGORY": offlineMeterBaseAndReportingNames, "VALUE": null, "UNIT": offlineMeterBaseAndReportingUnits}}
+        reportingLabels={offlineMeterReportingLabels}
+        reportingData={offlineMeterReportingData}
+        baseLabels={offlineMeterBaseLabels}
+        baseData={offlineMeterBaseData}
+        rates={offlineMeterReportingRates}
+        options={offlineMeterReportingOptions}>
+      </MultiTrendChart>
 
-      <LineChart reportingTitle={t('Related Parameters')}
+      <MultipleLineChart reportingTitle={t('Related Parameters')}
         baseTitle=''
         labels={parameterLineChartLabels}
         data={parameterLineChartData}
         options={parameterLineChartOptions}>
-      </LineChart>
+      </MultipleLineChart>
       <br />
       <DetailedDataTable data={detailedDataTableData} title={t('Detailed Data')} columns={detailedDataTableColumns} pagesize={50} >
       </DetailedDataTable>

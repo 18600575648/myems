@@ -39,111 +39,12 @@ Using open source to help achieve carbon peak carbon neutrality goals.
 
 ## Features of MyEMS Community Edition
 
-| Features                         | Community Edition | Explanation    |
-| :---                             |      :----:       | :----:         |
-| Open Source                      | ✔️            | MIT License        |
-| Pricing                          | Free            |               |
-| Change Name and Logo             | ❌️            | There are legal risks in case of violation |
-| Modbus TCP Protocol              | ✔️            | Data acquisition, https://modbus.org/      |
-| Data Points Number               | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Meters Number                    | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Spaces Number                    | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Equipments Number                | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Tenants Number                   | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Stores Number                    | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Shop Floors Number                | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Combined Equipments Number       | Unlimited       | The actual number is limited by the upper limit of server resources |
-| Docker                           | ✔️             | https://hub.docker.com/u/myems |
-| MySQL                            | ✔️             | http://mysql.com/    |
-| Percona Server for MySQL         | ✔️             | https://www.percona.com/ |
-| MariaDB                          | ✔️             | https://mariadb.org/ |
-| SingleStore                      | ✔️             | https://www.singlestore.com/ |
-| OceanBase                         | ✔️             | https://www.oceanbase.com/ |
-| AWS Cloud                        | ✔️             | https://aws.amazon.com/ |
-| Azure Cloud                      | ✔️             | https://azure.microsoft.com/ |
-| Alibaba Cloud                    | ✔️             | https://aliyun.com/ |
-| Private Cloud                    | ✔️             |                      |
-| Data Comparison                  | ✔️             | Year-on-Year, Month-on-Month, Free Comparison, None Comparison |
-| Excel Exporter                   | ✔️             | Real Excel file, not CSV file. Tables, Line Charts, Column Charts, Pie Charts |
-| Meter/Meter Energy Report        | ✔️             | Cascade select Space, Multiple Compare Types, Multiple Period Types, Reporting Period Total Consumption, Base Period Total Consumption, Reporting Period Ton of Standard Coal, Reporting Period Ton of Carbon Dioxide Emissions, Reporting Period Trend, Related Parameters Data, Detailed Data, Export to Excel |
-| Meter/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Meter/Meter Cost Report          | ✔️             |                      |
-| Meter/Meter Trend Data           | ✔️             |                      |
-| Meter/Meter Realtime Data        | ✔️             |                      |
-| Meter/Master Meter Submeters Balance | ✔️         |                      |
-| Meter/Meter Tracking             | ✔️             |                      |
-| Meter/Meter Batch Analysis       | ✔️             |                      |
-| Meter/Virtual Meter Energy Report  | ✔️             |                      |
-| Meter/Virtual Meter Carbon Dioxide Emissions Report | ✔ |                    |
-| Meter/Virtual Meter Cost Report    | ✔️             |                      |
-| Meter/Offline Meter Energy Report  | ✔️             |                      |
-| Meter/Offline Meter Carbon Dioxide Emissions Report | ✔ |                    |
-| Meter/Offline Meter Cost Report    | ✔️             |                      |
-| Meter/Offline Meter Batch Analysis       | ✔️             |                      |
-| Space/Energy Category Data       | ✔️             |                      |
-| Space/Energy Item Data           | ✔️             |                      |
-| Space/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Space/Cost Data                  | ✔️             |                      |
-| Space/Output Data                | ✔️             |                      |
-| Space/Income Data                | ✔️             |                      |
-| Space/Efficiency Data            | ✔️             |                      |
-| Space/Load Data                  | ✔️             |                      |
-| Space/Statistics                 | ✔️             |                      |
-| Equipment/Energy Category Data   | ✔️             |                      |
-| Equipment/Energy Item Data       | ✔️             |                      |
-| Equipment/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Equipment/Cost Data              | ✔️             |                      |
-| Equipment/Output Data            | ✔️             |                      |
-| Equipment/Income Data            | ✔️             |                      |
-| Equipment/Efficiency Data        | ✔️             |                      |
-| Equipment/Load Data              | ✔️             |                      |
-| Equipment/Statistics             | ✔️             |                      |
-| Equipment/Batch Analysis         | ✔️             |                      |
-| Equipment/Equipment Tracking     | ✔️             |                      |
-| Tenant/Energy Category Data      | ✔️             |                      |
-| Tenant/Energy Item Data          | ✔️             |                      |
-| Tenant/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Tenant/Cost Data                 | ✔️             |                      |
-| Tenant/Load Data                 | ✔️             |                      |
-| Tenant/Statistics                | ✔️             |                      |
-| Tenant/Tenant Bill               | ✔️             |                      |
-| Tenant/Batch Analysis            | ✔️             |                      |
-| Store/Energy Category Data       | ✔️             |                      |
-| Store/Energy Item Data           | ✔️             |                      |
-| Store/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Store/Cost Data                  | ✔️             |                      |
-| Store/Load Data                  | ✔️             |                      |
-| Store/Statistics                 | ✔️             |                      |
-| Store/Batch Analysis             | ✔️             |                      |
-| Shopfloor/Energy Category Data   | ✔️             |                      |
-| Shopfloor/Energy Item Data       | ✔️             |                      |
-| Shopfloor/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Shopfloor/Cost Data              | ✔️             |                      |
-| Shopfloor/Load Data              | ✔️             |                      |
-| Shopfloor/Statistics             | ✔️             |                      |
-| Shopfloor/Batch Analysis         | ✔️             |                      |
-| Combined Equipment/Energy Category Data | ✔️      |                      |
-| Combined Equipment/Energy Item Data     | ✔️      |                      |
-| Combined Equipment/Carbon Dioxide Emissions Report | ✔️          |                      |
-| Combined Equipment/Cost Data            | ✔️      |                      |
-| Combined Equipment/Output Data          | ✔️      |                      |
-| Combined Equipment/Income Data          | ✔️      |                      |
-| Combined Equipment/Efficiency Data      | ✔️      |                      |
-| Combined Equipment/Load Data            | ✔️      |                      |
-| Combined Equipment/Statistics           | ✔️      |                      |
-| Combined Equipment/Batch Analysis       | ✔️      |                      |
-| Energy Dashboard                 | ✔️             |                      |
-| Energy Flow Diagram              | ✔️             |                      |
-| Distribution System              | ✔️             |                      |
-| RESTful API                      | ✔️             | Base on Python. Providing interfaces of system configuration, energy report and excel exporter |
-| Web UI                           | ✔️             | Based on ReactJS. Providing energy data virtualization. |
-| Admin UI                         | ✔️             | Based on AngularJS (version 1.x). Providing system configuration. |
-| Online Community Customer Support| ✔️             |                      |
+See [MyEMS Features(Community Edition)](https://myems.io/docs/intro#myems-features)
 
 
 ## Features of MyEMS Enterprise Edition
 
-See [Features of MyEMS Enterprise Edition](./enterprise-edition-en.md)
+See [Features of MyEMS Enterprise Edition](https://myems.io/docs/enterprise)
 
 
 ## MyEMS Downloads (Community Edition)
@@ -225,7 +126,7 @@ administrator@myems.io
 
 ### Docker Compose Repaid Deployment
 
-See [Docker Compose Repaid Deployment](docker-compose-en.md)
+See [Docker Compose Repaid Deployment](https://myems.io/docs/installation/docker-compose)
 
 ## MyEMS Project Management
 
@@ -233,7 +134,7 @@ See [Docker Compose Repaid Deployment](docker-compose-en.md)
 
 ## Integration Testing Cooperation Plan
 
-See [Integration Testing Cooperation Plan](integration-testing-cn.md)
+See [Integration Testing Cooperation Plan](https://myems.io/docs/cooperation)
 
 
 ## QQ Group

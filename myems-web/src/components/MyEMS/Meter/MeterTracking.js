@@ -1,4 +1,4 @@
-import React, { createRef, Fragment, useEffect, useState, useContext } from 'react';
+import React, { Fragment, useEffect, useState, useContext } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,7 +34,7 @@ import { withTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import ButtonIcon from '../../common/ButtonIcon';
 import { APIBaseURL } from '../../../config';
-import { DateRangePicker } from 'rsuite';
+import DateRangePickerWrapper from '../common/DateRangePickerWrapper';
 import { endOfDay} from 'date-fns';
 import Appcontext from '../../../context/Context'
 
@@ -52,14 +52,25 @@ const MeterTracking = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
-  let table = createRef();
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
   // State
   const [selectedSpaceName, setSelectedSpaceName] = useState(undefined);
   const [selectedSpaceID, setSelectedSpaceID] = useState(undefined);
@@ -162,7 +173,7 @@ const MeterTracking = ({ setRedirect, setRedirectUrl, t }) => {
       } else {
         toast.error(t(json.description));
       }
-      return [json[0]].map(o => o.value)
+      return [json[0]].map(o => o.value);
     }).catch(err => {
       console.log(err);
     });
@@ -395,7 +406,7 @@ const MeterTracking = ({ setRedirect, setRedirectUrl, t }) => {
           // show export button
           setExportButtonHidden(false);
         } else {
-          toast.error(t(json.description))
+          toast.error(t(json.description));
         }
       }).catch(err => {
         console.log(err);
@@ -463,7 +474,7 @@ const MeterTracking = ({ setRedirect, setRedirectUrl, t }) => {
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="reportingPeriodDateRangePicker">{t('Reporting Period')}</Label>
                   <br/>
-                  <DateRangePicker
+                  <DateRangePickerWrapper
                     id='reportingPeriodDateRangePicker'
                     format="yyyy-MM-dd HH:mm:ss"
                     value={reportingPeriodDateRange}

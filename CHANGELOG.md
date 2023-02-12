@@ -5,14 +5,115 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- added tbl_spaces_non_working_days to myems_system_db in database
+
+### Changed
+- upgraded bootstrap to v3.4.1 in myems-admin
+
+### Fixed
+- fixed make the implicitly inserted semicolon explicit in myems-web
+- fixed use of AngularJS markup in URL-valued attribute in myems-admin
+- fixed variable defined multiple times in myems-api
+- fixed unused local variable in myems-api
+- fixed semicolon insertion in myems-web
+- fixed unused variable, import, function or class in myems-web
+- fixed unused variable, import, function or class in myems-admin
+- fixed semicolon insertion in myems-admin
+
+### Removed
+- removed access control from GET action of offlinemeterfile in myems-api
+
+## [v2.11.0] - 2023-01-09
+### Added
+- added base period data to Combined Equipment reports
+- added read only property to administrator
+- 
+### Changed
+- updated translations of API errors in myems-web
+- updated myems-web to redirect URL to login page after 10 minutes of user idling
+- 
+### Fixed
+- fixed pagination caused issue in DetailedDataTable of myems-web
+- fixed issue of increment_rate_saving in combined equipment saving report
+- 
+### Removed
+-
+
+## [v2.10.0] - 2022-12-24
+### Added
+- added offline meter saving report
+- added base period data to Tenant reports
+- added child spaces percentage data to excel of spaceenergycategory report
+- added base period data to Store reports
+- added child spaces percentages to spaceenergycategory in myems-web
+- added base period data to Shopfloor reports
+- 
+### Changed
+- 
+### Fixed
+- fixed issue of increment_rate_saving in tenant saving report
+- fixed issue of increment_rate_saving in equipment saving report
+- fixed issue of increment_rate_saving in space saving report
+- fixed issue of electricity time-of-use pie chart in Excel exporters
+- fixed issue of increment_rate_saving in store saving report
+- fixed quick mode issue in combinedequipmentoutput report
+- fixed issue of increment_rate_saving in shopfloor saving report
+- 
+### Removed
+-
+
+## [v2.9.0] - 2022-12-19
+### Added
+- added base period data to Equipment reports
+- added base period data to Meter reports
+- added base period data to Virtual Meter reports
+- added base period data to Offline Meter reports
+- 
+### Changed
+- updated format statements by period types in execel exporters 
+- Replaced LineChart with MultipleLineChart for related parameters of space reports in myems-web
+- Replaced LineChart with MultipleLineChart for related parameters of combined equipment reports in myems-web
+- 
+### Fixed
+- fixed user calendar cannot fully display issue
+- fixed issues of comparing decimal with zero
+- fixed issue of increment_rate_saving in meter saving report
+- 
+### Removed
+-
+
+## [v2.8.0] - 2022-12-01
+### Added
 - added DateRangePickerWrapper to myems-web
+- added base period data to Space Energy Category report
+- added base period data to Space Energy Item report
+- added base period data to Space Carbon report
+- added base period data to Space Cost report
+- added base period data to Space Efficiency report
+- added base period data to Space Income report
+- added base period data to Space Load report
+- added base period data to Space Output report
+- added base period data to Space Saving report
+- added base period data to Space Statistics report
 - 
 ### Changed
 - Changed basePeriodDateRangePickerDisabled from readonly to disabled
 - Decreased web message drop down list length in myems-admin
 - Replaced LGTM with CodeQL for code scanning in README
-
+- Replaced LineChart with MultipleLineChart for related parameters of meter reports in myems-web
+- Replaced LineChart with MultipleLineChart for trend data of meter trend report in myems-web
+- Replaced LineChart with MultipleLineChart for related parameters of equipment reports in myems-web
+- Replaced LineChart with MultipleLineChart for related parameters of store reports in myems-web
+- Replaced LineChart with MultipleLineChart for related parameters of shopfloor reports in myems-web
+- Replaced LineChart with MultipleLineChart for related parameters of tenant reports in myems-web
+- Upgraded angular.js to v1.8.3 in myems-admin
+- 
 ### Fixed
+- fixed File is not always closed
+- fixed Explicit returns mixed with implicit (fall through) returns
+- fixed Empty except in myems-api
+- fixed Variable defined multiple times
+- fixed Unused local variable in myems-api
 - 
 ### Removed
 -
@@ -1084,7 +1185,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 -   None.
 
-[Unreleased]: https://github.com/MyEMS/myems/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/MyEMS/myems/compare/v2.11.0...HEAD
+[2.11.0]: https://github.com/MyEMS/myems/compare/v2.10.0...v2.11.0
+[2.10.0]: https://github.com/MyEMS/myems/compare/v2.9.0...v2.10.0
+[2.9.0]: https://github.com/MyEMS/myems/compare/v2.8.0...v2.9.0
+[2.8.0]: https://github.com/MyEMS/myems/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/MyEMS/myems/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/MyEMS/myems/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/MyEMS/myems/compare/v2.4.0...v2.5.0

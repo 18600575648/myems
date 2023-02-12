@@ -39,7 +39,7 @@ def export(result, space_name, reporting_start_datetime_local, reporting_end_dat
         with open(filename, 'rb') as binary_file:
             binary_file_data = binary_file.read()
     except IOError as ex:
-        pass
+        print(str(ex))
 
     # Base64 encode the bytes
     base64_encoded_data = base64.b64encode(binary_file_data)
@@ -49,7 +49,7 @@ def export(result, space_name, reporting_start_datetime_local, reporting_end_dat
     try:
         os.remove(filename)
     except NotImplementedError as ex:
-        pass
+        print(str(ex))
     return base64_message
 
 
@@ -90,7 +90,6 @@ def generate_excel(report, space_name, reporting_start_datetime_local, reporting
     # Font
     name_font = Font(name='Arial', size=15, bold=True)
     title_font = Font(name='Arial', size=15, bold=True)
-    data_font = Font(name='Franklin Gothic Book', size=11)
 
     table_fill = PatternFill(fill_type='solid', fgColor='90ee90')
     f_border = Border(left=Side(border_style='medium'),

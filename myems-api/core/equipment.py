@@ -396,16 +396,10 @@ class EquipmentItem:
     @staticmethod
     @user_logger
     def on_post(req, resp, id_):
-        """Handles PUT requests"""
+        """Handles POST requests"""
         if not id_.isdigit() or int(id_) <= 0:
             raise falcon.HTTPError(falcon.HTTP_400, title='API.BAD_REQUEST',
                                    description='API.INVALID_EQUIPMENT_ID')
-        try:
-            raw_json = req.stream.read().decode('utf-8')
-        except Exception as ex:
-            raise falcon.HTTPError(falcon.HTTP_400, title='API.EXCEPTION', description=str(ex))
-
-        new_values = json.loads(raw_json)
 
         cnx = mysql.connector.connect(**config.myems_system_db)
         cursor = cnx.cursor()
@@ -1347,7 +1341,6 @@ class EquipmentMeterCollection:
         add_row = (" INSERT INTO tbl_equipments_meters (equipment_id, meter_id, is_output ) "
                    " VALUES (%s, %s, %s) ")
         cursor.execute(add_row, (id_, meter_id, is_output))
-        new_id = cursor.lastrowid
         cnx.commit()
         cursor.close()
         cnx.close()
@@ -1538,7 +1531,6 @@ class EquipmentOfflineMeterCollection:
         add_row = (" INSERT INTO tbl_equipments_offline_meters (equipment_id, offline_meter_id, is_output ) "
                    " VALUES (%s, %s, %s) ")
         cursor.execute(add_row, (id_, offline_meter_id, is_output))
-        new_id = cursor.lastrowid
         cnx.commit()
         cursor.close()
         cnx.close()
@@ -1730,7 +1722,6 @@ class EquipmentVirtualMeterCollection:
         add_row = (" INSERT INTO tbl_equipments_virtual_meters (equipment_id, virtual_meter_id, is_output ) "
                    " VALUES (%s, %s, %s) ")
         cursor.execute(add_row, (id_, virtual_meter_id, is_output))
-        new_id = cursor.lastrowid
         cnx.commit()
         cursor.close()
         cnx.close()

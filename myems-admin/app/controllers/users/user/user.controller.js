@@ -232,6 +232,7 @@ app.controller('ModalAddUserCtrl', function ($scope, $uibModalInstance, params) 
 	$scope.privileges = params.privileges;
 	$scope.user = {
 		is_admin: false,
+		is_read_only: false,
 		account_expiration_datetime:moment().add(1,'years'),
         password_expiration_datetime:moment().add(1,'years')
 	};
@@ -241,6 +242,7 @@ app.controller('ModalAddUserCtrl', function ($scope, $uibModalInstance, params) 
             applyLabel: "OK",
             cancelLabel: "Cancel",
         },
+		drops: "up",
         timePicker: true,
         timePicker24Hour: true,
         timePickerIncrement: 15,
@@ -249,6 +251,8 @@ app.controller('ModalAddUserCtrl', function ($scope, $uibModalInstance, params) 
 	$scope.ok = function () {
 		if ($scope.user.is_admin) {
 			$scope.user.privilege_id = undefined;
+		}else {
+			$scope.user.is_read_only = undefined;
 		}
 		$scope.user.account_expiration_datetime = $scope.user.account_expiration_datetime.format().slice(0,19);
         $scope.user.password_expiration_datetime = $scope.user.password_expiration_datetime.format().slice(0,19);
@@ -276,6 +280,7 @@ app.controller('ModalEditUserCtrl', function ($scope, $uibModalInstance, params)
             applyLabel: "OK",
             cancelLabel: "Cancel",
         },
+		drops: "up",
         timePicker: true,
         timePicker24Hour: true,
         timePickerIncrement: 15,
@@ -284,6 +289,11 @@ app.controller('ModalEditUserCtrl', function ($scope, $uibModalInstance, params)
 	$scope.ok = function () {
 		if ($scope.user.is_admin) {
 			$scope.user.privilege_id = undefined;
+			if ($scope.user.is_read_only == null) {
+				$scope.user.is_read_only = false
+			}
+		}else {
+			$scope.user.is_read_only = undefined;
 		}
 		$scope.user.account_expiration_datetime = moment($scope.user.account_expiration_datetime).format().slice(0,19);
         $scope.user.password_expiration_datetime = moment($scope.user.password_expiration_datetime).format().slice(0,19);

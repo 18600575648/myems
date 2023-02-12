@@ -20,7 +20,7 @@ import moment from 'moment';
 import loadable from '@loadable/component';
 import Cascader from 'rc-cascader';
 import CardSummary from '../common/CardSummary';
-import LineChart from '../common/LineChart';
+import MultiTrendChart from '../common/MultiTrendChart';
 import { getCookieValue, createCookie } from '../../../helpers/utils';
 import withRedirect from '../../../hoc/withRedirect';
 import { withTranslation } from 'react-i18next';
@@ -29,9 +29,10 @@ import ButtonIcon from '../../common/ButtonIcon';
 import { APIBaseURL } from '../../../config';
 import { periodTypeOptions } from '../common/PeriodTypeOptions';
 import { comparisonTypeOptions } from '../common/ComparisonTypeOptions';
-import { DateRangePicker } from 'rsuite';
+import DateRangePickerWrapper from '../common/DateRangePickerWrapper';
 import { endOfDay} from 'date-fns';
 import AppContext from '../../../context/Context';
+import MultipleLineChart from '../common/MultipleLineChart';
 
 const DetailedDataTable = loadable(() => import('../common/DetailedDataTable'));
 const AssociatedEquipmentTable = loadable(() => import('../common/AssociatedEquipmentTable'));
@@ -49,14 +50,24 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
       setRedirect(true);
     } else {
       //update expires time of cookies
-      createCookie('is_logged_in', true, 1000 * 60 * 60 * 8);
-      createCookie('user_name', user_name, 1000 * 60 * 60 * 8);
-      createCookie('user_display_name', user_display_name, 1000 * 60 * 60 * 8);
-      createCookie('user_uuid', user_uuid, 1000 * 60 * 60 * 8);
-      createCookie('token', token, 1000 * 60 * 60 * 8);
+      createCookie('is_logged_in', true, 1000 * 60 * 10 * 1);
+      createCookie('user_name', user_name, 1000 * 60 * 10 * 1);
+      createCookie('user_display_name', user_display_name, 1000 * 60 * 10 * 1);
+      createCookie('user_uuid', user_uuid, 1000 * 60 * 10 * 1);
+      createCookie('token', token, 1000 * 60 * 10 * 1);
     }
   });
 
+  useEffect(() => {
+    let timer = setInterval(() => {
+      let is_logged_in = getCookieValue('is_logged_in');
+      if (is_logged_in === null || !is_logged_in) {
+        setRedirectUrl(`/authentication/basic/login`);
+        setRedirect(true);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // State
   // Query Parameters
@@ -97,9 +108,18 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
 
   //Results
   const [cardSummaryList, setCardSummaryList] = useState([]);
-  const [combinedEquipmentLineChartLabels, setCombinedEquipmentLineChartLabels] = useState([]);
-  const [combinedEquipmentLineChartData, setCombinedEquipmentLineChartData] = useState({});
-  const [combinedEquipmentLineChartOptions, setCombinedEquipmentLineChartOptions] = useState([]);
+
+  const [combinedEquipmentBaseAndReportingNames, setCombinedEquipmentBaseAndReportingNames] = useState({"a0":""});
+  const [combinedEquipmentBaseAndReportingUnits, setCombinedEquipmentBaseAndReportingUnits] = useState({"a0":"()"});
+
+  const [combinedEquipmentBaseLabels, setCombinedEquipmentBaseLabels] = useState({"a0": []});
+  const [combinedEquipmentBaseData, setCombinedEquipmentBaseData] = useState({"a0": []});
+
+  const [combinedEquipmentReportingLabels, setCombinedEquipmentReportingLabels] = useState({"a0": []});
+  const [combinedEquipmentReportingData, setCombinedEquipmentReportingData] = useState({"a0": []});
+
+  const [combinedEquipmentReportingRates, setCombinedEquipmentReportingRates] = useState({"a0": []});
+  const [combinedEquipmentReportingOptions, setCombinedEquipmentReportingOptions] = useState([]);
 
   const [parameterLineChartLabels, setParameterLineChartLabels] = useState([]);
   const [parameterLineChartData, setParameterLineChartData] = useState({});
@@ -220,13 +240,12 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
           setSubmitButtonDisabled(true);
         }
       } else {
-        toast.error(t(json.description))
+        toast.error(t(json.description));
       }
     }).catch(err => {
       console.log(err);
     });
-  }
-
+  };
 
   let onComparisonTypeChange = ({ target }) => {
     console.log(target.value);
@@ -288,6 +307,21 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
     setReportingPeriodDateRange([null, null]);
   };
 
+  const isBasePeriodTimestampExists = (base_period_data) => {
+    const timestamps = base_period_data['timestamps'];
+
+    if (timestamps.length === 0) {
+      return false;
+    }
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i].length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Handler
   const handleSubmit = e => {
     e.preventDefault();
@@ -336,11 +370,11 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
       return response.json();
     }).then(json => {
       if (isResponseOK) {
-        console.log(json)
+        console.log(json);
 
-        let cardSummaryArray = []
+        let cardSummaryArray = [];
         json['reporting_period']['names'].forEach((currentValue, index) => {
-          let cardSummaryItem = {}
+          let cardSummaryItem = {};
           cardSummaryItem['name'] = json['reporting_period']['names'][index];
           cardSummaryItem['unit'] = json['reporting_period']['units'][index];
           cardSummaryItem['average'] = json['reporting_period']['averages'][index];
@@ -353,105 +387,253 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
         });
         setCardSummaryList(cardSummaryArray);
 
-        let timestamps = {}
+        let base_timestamps = {}
+        json['base_period']['timestamps'].forEach((currentValue, index) => {
+          base_timestamps['a' + index] = currentValue;
+        });
+        setCombinedEquipmentBaseLabels(base_timestamps)
+
+        let base_values = {}
+        json['base_period']['sub_maximums'].forEach((currentValue, index) => {
+          base_values['a' + index] = currentValue;
+        });
+        setCombinedEquipmentBaseData(base_values)
+
+        /*
+        * Tip:
+        *     base_names === reporting_names
+        *     base_units === reporting_units
+        * */
+
+        let base_and_reporting_names = {}
+        json['reporting_period']['names'].forEach((currentValue, index) => {
+          base_and_reporting_names['a' + index] = currentValue;
+        });
+        setCombinedEquipmentBaseAndReportingNames(base_and_reporting_names)
+
+        let base_and_reporting_units = {}
+        json['reporting_period']['units'].forEach((currentValue, index) => {
+          base_and_reporting_units['a' + index] = "("+currentValue+"/H)";
+        });
+        setCombinedEquipmentBaseAndReportingUnits(base_and_reporting_units)
+
+        let reporting_timestamps = {}
         json['reporting_period']['timestamps'].forEach((currentValue, index) => {
-          timestamps['a' + index] = currentValue;
+          reporting_timestamps['a' + index] = currentValue;
         });
-        setCombinedEquipmentLineChartLabels(timestamps);
-        
-        let values = {}
+        setCombinedEquipmentReportingLabels(reporting_timestamps);
+
+        let reporting_values = {}
         json['reporting_period']['sub_maximums'].forEach((currentValue, index) => {
-          values['a' + index] = currentValue;
+          reporting_values['a' + index] = currentValue;
         });
-        setCombinedEquipmentLineChartData(values);
-        
-        let names = Array();
+        setCombinedEquipmentReportingData(reporting_values);
+
+        let rates = {}
+        json['reporting_period']['rates_of_sub_maximums'].forEach((currentValue, index) => {
+          let currentRate = Array();
+          currentValue.forEach((rate) => {
+            currentRate.push(rate ? parseFloat(rate * 100).toFixed(2) : '0.00');
+          });
+          rates['a' + index] = currentRate;
+        });
+        setCombinedEquipmentReportingRates(rates)
+
+        let options = Array();
         json['reporting_period']['names'].forEach((currentValue, index) => {
           let unit = json['reporting_period']['units'][index];
-          names.push({ 'value': 'a' + index, 'label': currentValue + ' (' + unit + '/H)'});
+          options.push({ 'value': 'a' + index, 'label': currentValue + ' (' + unit + '/H)'});
         });
-        setCombinedEquipmentLineChartOptions(names);
+        setCombinedEquipmentReportingOptions(options);
       
-        timestamps = {}
+        let timestamps = {}
         json['parameters']['timestamps'].forEach((currentValue, index) => {
           timestamps['a' + index] = currentValue;
         });
         setParameterLineChartLabels(timestamps);
 
-        values = {}
+        let values = {}
         json['parameters']['values'].forEach((currentValue, index) => {
           values['a' + index] = currentValue;
         });
         setParameterLineChartData(values);
       
-        names = Array();
+        let names = Array();
         json['parameters']['names'].forEach((currentValue, index) => {
           
           names.push({ 'value': 'a' + index, 'label': currentValue });
         });
         setParameterLineChartOptions(names);
 
-        let detailed_value_list = [];
-        if (json['reporting_period']['timestamps'].length > 0) {
-          json['reporting_period']['timestamps'][0].forEach((currentTimestamp, timestampIndex) => {
-            let detailed_value = {};
-            detailed_value['id'] = timestampIndex;
-            detailed_value['startdatetime'] = currentTimestamp;
-            json['reporting_period']['sub_averages'].forEach((currentValue, energyCategoryIndex) => {
-              if (json['reporting_period']['sub_averages'][energyCategoryIndex][timestampIndex] != null) {
-                detailed_value['a' + 2 * energyCategoryIndex] = json['reporting_period']['sub_averages'][energyCategoryIndex][timestampIndex];
-              } else {
-                detailed_value['a' + 2 * energyCategoryIndex] = null;
-              };  
-            
-              if (json['reporting_period']['sub_maximums'][energyCategoryIndex][timestampIndex] != null) {
-                detailed_value['a' + (2 * energyCategoryIndex + 1)] = json['reporting_period']['sub_maximums'][energyCategoryIndex][timestampIndex];
-              } else {
-                detailed_value['a' + (2 * energyCategoryIndex + 1)] = null;
-              };            
-            });
-            detailed_value_list.push(detailed_value);
-          });
-        };
+        if(!isBasePeriodTimestampExists(json['base_period'])) {
+          let detailed_value_list = [];
+          if (json['reporting_period']['timestamps'].length > 0) {
+            json['reporting_period']['timestamps'][0].forEach((currentTimestamp, timestampIndex) => {
+              let detailed_value = {};
+              detailed_value['id'] = timestampIndex;
+              detailed_value['startdatetime'] = currentTimestamp;
+              json['reporting_period']['sub_averages'].forEach((currentValue, energyCategoryIndex) => {
+                if (json['reporting_period']['sub_averages'][energyCategoryIndex][timestampIndex] != null) {
+                  detailed_value['a' + 2 * energyCategoryIndex] = json['reporting_period']['sub_averages'][energyCategoryIndex][timestampIndex];
+                } else {
+                  detailed_value['a' + 2 * energyCategoryIndex] = null;
+                }
+                ;
 
-        setTimeout( () => {
-          setDetailedDataTableData(detailed_value_list);
-        }, 0)
-        
-        let detailed_column_list = [];
-        detailed_column_list.push({
-          dataField: 'startdatetime',
-          text: t('Datetime'),
-          sort: true
-        });
-        json['reporting_period']['names'].forEach((currentValue, index) => {
-          let unit = json['reporting_period']['units'][index];
+                if (json['reporting_period']['sub_maximums'][energyCategoryIndex][timestampIndex] != null) {
+                  detailed_value['a' + (2 * energyCategoryIndex + 1)] = json['reporting_period']['sub_maximums'][energyCategoryIndex][timestampIndex];
+                } else {
+                  detailed_value['a' + (2 * energyCategoryIndex + 1)] = null;
+                }
+                ;
+              });
+              detailed_value_list.push(detailed_value);
+            });
+          }
+          ;
+
+          setTimeout(() => {
+            setDetailedDataTableData(detailed_value_list);
+          }, 0)
+
+          let detailed_column_list = [];
           detailed_column_list.push({
-            dataField: 'a' + 2 * index,
-            text: currentValue + ' ' + t('Average Load') + ' (' + unit + '/H)',
-            sort: true,
-            formatter: function (decimalValue) {
-              if (typeof decimalValue === 'number') {
-                return decimalValue.toFixed(2);
-              } else {
-                return null;
-              }
-            }
+            dataField: 'startdatetime',
+            text: t('Datetime'),
+            sort: true
           });
+          json['reporting_period']['names'].forEach((currentValue, index) => {
+            let unit = json['reporting_period']['units'][index];
+            detailed_column_list.push({
+              dataField: 'a' + 2 * index,
+              text: currentValue + ' ' + t('Average Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            });
+            detailed_column_list.push({
+              dataField: 'a' + (2 * index + 1),
+              text: currentValue + ' ' + t('Maximum Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            });
+          });
+          setDetailedDataTableColumns(detailed_column_list);
+        }else {
+          /*
+          * Tip:
+          *     json['base_period']['names'] ===  json['reporting_period']['names']
+          *     json['base_period']['units'] ===  json['reporting_period']['units']
+          * */
+          let detailed_column_list = [];
           detailed_column_list.push({
-            dataField: 'a' + (2 * index + 1),
-            text: currentValue + ' ' + t('Maximum Load') + ' (' + unit + '/H)',
-            sort: true,
-            formatter: function (decimalValue) {
-              if (typeof decimalValue === 'number') {
-                return decimalValue.toFixed(2);
-              } else {
-                return null;
+            dataField: 'basePeriodDatetime',
+            text: t('Base Period') + ' - ' + t('Datetime'),
+            sort: true
+          })
+
+          json['base_period']['names'].forEach((currentValue, index) => {
+            let unit = json['base_period']['units'][index];
+            detailed_column_list.push({
+              dataField: 'a' + 2 * index,
+              text: t('Base Period') + ' - ' + currentValue + ' ' + t('Average Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
               }
-            }
+            });
+            detailed_column_list.push({
+              dataField: 'a' + (2 * index + 1),
+              text: t('Base Period') + ' - ' + currentValue + ' ' + t('Maximum Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            });
           });
-        });
-        setDetailedDataTableColumns(detailed_column_list);
+
+          detailed_column_list.push({
+            dataField: 'reportingPeriodDatetime',
+            text: t('Reporting Period') + ' - ' + t('Datetime'),
+            sort: true
+          })
+
+          json['reporting_period']['names'].forEach((currentValue, index) => {
+            let unit = json['reporting_period']['units'][index];
+            detailed_column_list.push({
+              dataField: 'b' + 2 * index,
+              text: t('Reporting Period') + ' - ' + currentValue + ' ' + t('Average Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            });
+            detailed_column_list.push({
+              dataField: 'b' + (2 * index + 1),
+              text: t('Reporting Period') + ' - ' + currentValue + ' ' + t('Maximum Load') + ' (' + unit + '/H)',
+              sort: true,
+              formatter: function (decimalValue) {
+                if (typeof decimalValue === 'number') {
+                  return decimalValue.toFixed(2);
+                } else {
+                  return null;
+                }
+              }
+            });
+          });
+          setDetailedDataTableColumns(detailed_column_list);
+
+          let detailed_value_list = [];
+          if (json['base_period']['timestamps'].length > 0 || json['reporting_period']['timestamps'].length > 0) {
+            const max_timestamps_length = json['base_period']['timestamps'][0].length >= json['reporting_period']['timestamps'][0].length?
+                json['base_period']['timestamps'][0].length : json['reporting_period']['timestamps'][0].length;
+            for (let index = 0; index < max_timestamps_length; index++) {
+              let detailed_value = {};
+              detailed_value['id'] = index;
+              detailed_value['basePeriodDatetime'] = index < json['base_period']['timestamps'][0].length? json['base_period']['timestamps'][0][index] : null;
+              json['base_period']['sub_averages'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['a' + energyCategoryIndex*2] = index < json['base_period']['sub_averages'][energyCategoryIndex].length? json['base_period']['sub_averages'][energyCategoryIndex][index] : null;
+              });
+              json['base_period']['sub_maximums'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['a' + (energyCategoryIndex*2+1)] = index < json['base_period']['sub_maximums'][energyCategoryIndex].length? json['base_period']['sub_maximums'][energyCategoryIndex][index] : null;
+              });
+              detailed_value['reportingPeriodDatetime'] = index < json['reporting_period']['timestamps'][0].length? json['reporting_period']['timestamps'][0][index] : null;
+              json['reporting_period']['sub_averages'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['b' + energyCategoryIndex*2] = index < json['reporting_period']['sub_averages'][energyCategoryIndex].length? json['reporting_period']['sub_averages'][energyCategoryIndex][index] : null;
+              });
+              json['reporting_period']['sub_maximums'].forEach((currentValue, energyCategoryIndex) => {
+                detailed_value['b' + (energyCategoryIndex*2+1)] = index < json['reporting_period']['sub_maximums'][energyCategoryIndex].length? json['reporting_period']['sub_maximums'][energyCategoryIndex][index] : null;
+              });
+              detailed_value_list.push(detailed_value);
+            }
+            setTimeout( () => {
+              setDetailedDataTableData(detailed_value_list);
+            }, 0)
+          }
+        }
         
         let associated_equipment_value_list = [];
         if (json['associated_equipment']['associated_equipment_names_array'].length > 0) {
@@ -625,7 +807,7 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
               <Col xs={6} sm={3}>
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="basePeriodDateRangePicker">{t('Base Period')}{t('(Optional)')}</Label>
-                  <DateRangePicker 
+                  <DateRangePickerWrapper 
                     id='basePeriodDateRangePicker'
                     disabled={basePeriodDateRangePickerDisabled}
                     format="yyyy-MM-dd HH:mm:ss"
@@ -643,7 +825,7 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
                 <FormGroup className="form-group">
                   <Label className={labelClasses} for="reportingPeriodDateRangePicker">{t('Reporting Period')}</Label>
                   <br/>
-                  <DateRangePicker
+                  <DateRangePickerWrapper
                     id='reportingPeriodDateRangePicker'
                     format="yyyy-MM-dd HH:mm:ss"
                     value={reportingPeriodDateRange}
@@ -705,19 +887,25 @@ const CombinedEquipmentLoad = ({ setRedirect, setRedirectUrl, t }) => {
           </CardSummary>
         </div>
       ))}
-      <LineChart reportingTitle={t('Reporting Period CATEGORY Maximum Load UNIT', { 'CATEGORY': null, 'UNIT': null })}
-        baseTitle=''
-        labels={combinedEquipmentLineChartLabels}
-        data={combinedEquipmentLineChartData}
-        options={combinedEquipmentLineChartOptions}>
-      </LineChart>
 
-      <LineChart reportingTitle={t('Related Parameters')}
+      <MultiTrendChart reportingTitle = {{"name": "Reporting Period CATEGORY Maximum Load UNIT", "substitute": ["CATEGORY", "UNIT"], "CATEGORY": combinedEquipmentBaseAndReportingNames, "UNIT": combinedEquipmentBaseAndReportingUnits}}
+        baseTitle = {{"name": "Base Period CATEGORY Maximum Load UNIT", "substitute": ["CATEGORY", "UNIT"], "CATEGORY": combinedEquipmentBaseAndReportingNames, "UNIT": combinedEquipmentBaseAndReportingUnits}}
+        reportingTooltipTitle = {{"name": "Reporting Period CATEGORY Maximum Load UNIT", "substitute": ["CATEGORY", "UNIT"], "CATEGORY": combinedEquipmentBaseAndReportingNames, "UNIT": combinedEquipmentBaseAndReportingUnits}}
+        baseTooltipTitle = {{"name": "Base Period CATEGORY Maximum Load UNIT", "substitute": ["CATEGORY", "UNIT"], "CATEGORY": combinedEquipmentBaseAndReportingNames, "UNIT": combinedEquipmentBaseAndReportingUnits}}
+        reportingLabels={combinedEquipmentReportingLabels}
+        reportingData={combinedEquipmentReportingData}
+        baseLabels={combinedEquipmentBaseLabels}
+        baseData={combinedEquipmentBaseData}
+        rates={combinedEquipmentReportingRates}
+        options={combinedEquipmentReportingOptions}>
+      </MultiTrendChart>
+
+      <MultipleLineChart reportingTitle={t('Related Parameters')}
         baseTitle=''
         labels={parameterLineChartLabels}
         data={parameterLineChartData}
         options={parameterLineChartOptions}>
-      </LineChart>
+      </MultipleLineChart>
       <br />
       <DetailedDataTable data={detailedDataTableData} title={t('Detailed Data')} columns={detailedDataTableColumns} pagesize={50} >
       </DetailedDataTable>
